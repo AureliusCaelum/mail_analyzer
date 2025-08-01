@@ -65,29 +65,43 @@ class EmailScanner:
                 self._client.disconnect()
 
 def scan_email(email, trusted_domains=None):
-    """
-    Scans an email for potential security issues and determines its risk level.
+    """Analyze an email for potential security issues and determine its risk level.
+
+    The function safely handles missing fields by using default values when accessing
+    the email dictionary and validates the sender against a list of trusted domains.
+
     Args:
-        email (dict): A dictionary representing the email with keys such as "subject", "body", "sender", and optionally "attachments".
+        email (dict): Email data with keys such as "subject", "body", "sender" and
+            optionally "attachments".
+        trusted_domains (list[str], optional): Domain suffixes that are considered
+            trusted. Defaults to ["@ihrefirma.de", "@vertrauenswuerdig.de"] if not
+            provided.
+
     Returns:
-        tuple: A tuple containing:
-            - risk (str): The determined risk level (e.g., "green", "yellow", "red").
-            - issues (list of str): A list of strings describing any detected issues.
+        tuple[str, list[str]]: Risk level and list of detected issues.
+
     The function checks for:
         - Suspicious keywords in the subject and body.
         - Suspicious or shortened links in the body.
         - Suspicious file extensions in attachments.
         - Unknown or external senders.
     """
+    if trusted_domains is None:
+        trusted_domains = ["@ihrefirma.de", "@vertrauenswuerdig.de"]
+
+    subject = email.get("subject", "") or ""
+    body = email.get("body", "") or ""
+    sender = email.get("sender", "") or ""
+
     issues = []
 
     # Check for suspicious keywords in subject and body
     for keyword in SUSPICIOUS_KEYWORDS:
-        if keyword.lower() in (email["subject"] or "").lower() or keyword.lower() in (email["body"] or "").lower():
+        if keyword.lower() in subject.lower() or keyword.lower() in body.lower():
             issues.append(f"Verdächtiges Schlüsselwort gefunden: '{keyword}'")
 
     # Check for suspicious links
-    links = re.findall(r'https?://[^\s]+', email["body"] or "")
+    links = re.findall(r'https?://[^\s]+', body)
     for link in links:
         if any(domain in link for domain in ["bit.ly", "tinyurl", "goo.gl", "ow.ly"]):
             issues.append(f"Verdächtiger Kurzlink gefunden: {link}")
@@ -100,8 +114,8 @@ def scan_email(email, trusted_domains=None):
             issues.append(f"Verdächtiger Anhang: {att}")
 
     # Check for unknown sender (simple heuristic)
-    if not email["sender"].endswith(("@ihrefirma.de", "@vertrauenswuerdig.de")):
-        issues.append(f"Unbekannter oder externer Absender: {email['sender']}")
+    if not any(sender.endswith(domain) for domain in trusted_domains):
+        issues.append(f"Unbekannter oder externer Absender: {sender}")
 
     # Determine risk level
     risk = determine_risk_level(issues)
