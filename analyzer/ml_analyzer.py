@@ -1,6 +1,7 @@
-"""
-Machine Learning Komponente für die E-Mail-Analyse
-Implementiert ein lokales Modell, das kontinuierlich aus den analysierten E-Mails lernt
+"""Machine-Learning-Komponente zur E-Mail-Analyse.
+
+Das Modul implementiert ein lokales Modell, das kontinuierlich aus den
+analysierten E-Mails lernt.
 """
 import os
 import pickle
@@ -17,6 +18,7 @@ from sklearn.metrics import mean_squared_error
 import logging
 from typing import Dict, List, Tuple, Optional
 import json
+
 
 class MLAnalyzer:
     def __init__(self, model_dir: str = "models"):
@@ -35,7 +37,14 @@ class MLAnalyzer:
         self.training_data = self._load_training_data()
 
     def analyze_email(self, email_data: Dict) -> Dict:
-        """Analysiert eine E-Mail mit dem ML-Modell"""
+        """Analysiert eine E-Mail mit dem ML-Modell.
+
+        Args:
+            email_data: E-Mail-Inhalt und Metadaten.
+
+        Returns:
+            Bewertung und zusätzliche ML-Informationen.
+        """
         try:
             if not self.model or not self.vectorizer:
                 return {"ml_score": 0.0, "confidence": 0.0}
@@ -49,10 +58,10 @@ class MLAnalyzer:
 
             return {
                 "ml_score": float(prediction),
-                # Bei Regressionsmodellen liegen keine Wahrscheinlichkeiten vor.
-                # Wir geben daher eine konstante Konfidenz von 1.0 zurück.
+                # Regressionsmodelle liefern keine Wahrscheinlichkeiten.
+                # Daher geben wir eine konstante Konfidenz von 1.0 zurück.
                 "confidence": 1.0,
-                "ml_features": self._get_important_features(features)
+                "ml_features": self._get_important_features(features),
             }
 
         except Exception as e:
@@ -60,7 +69,12 @@ class MLAnalyzer:
             return {"ml_score": 0.0, "confidence": 0.0}
 
     def train(self, email_data: Dict, threat_score: float):
-        """Trainiert das Modell mit einer neuen E-Mail"""
+        """Trainiert das Modell mit einer neuen E-Mail.
+
+        Args:
+            email_data: Strukturierte E-Mail-Daten.
+            threat_score: Manuell zugewiesener Bedrohungswert.
+        """
         try:
             # Speichere Trainingsdaten
             features = self._extract_features(email_data)
@@ -69,12 +83,15 @@ class MLAnalyzer:
                 "score": threat_score,
                 "metadata": {
                     "timestamp": email_data.get("timestamp", ""),
-                    "sender_domain": email_data.get("sender", "").split("@")[-1],
+                    "sender_domain": email_data.get(
+                        "sender", ""
+                    ).split("@")[-1],
                 }
             })
 
             # Trainiere neu, wenn genügend neue Daten vorhanden sind
-            if len(self.training_data) % 10 == 0:  # Alle 10 E-Mails neu trainieren
+            if len(self.training_data) % 10 == 0:
+                # Alle 10 E-Mails neu trainieren
                 self._retrain_model()
                 self._save_training_data()
 
@@ -126,13 +143,19 @@ class MLAnalyzer:
         # Speichere aktualisierte Modelle
         self._save_models()
 
-    def _get_important_features(self, features: str) -> List[Tuple[str, float]]:
-        """Ermittelt die wichtigsten Features für die Klassifizierung"""
+    def _get_important_features(
+        self, features: str
+    ) -> List[Tuple[str, float]]:
+        """Ermittelt die wichtigsten Features für die Klassifizierung.
+
+        Args:
+            features: Textrepräsentation der E-Mail.
+
+        Returns:
+            Liste der wichtigsten Features mit zugehöriger Wichtigkeit.
+        """
         if not self.model or not self.vectorizer:
             return []
-
-        # Transformiere Features
-        feature_vector = self.vectorizer.transform([features])
 
         # Hole Feature-Namen und Wichtigkeiten
         feature_names = self.vectorizer.get_feature_names_out()
@@ -141,8 +164,10 @@ class MLAnalyzer:
         # Finde die wichtigsten Features
         important_features = []
         for i, importance in enumerate(importances):
-            if importance > 0.01:  # Nur Features mit Wichtigkeit > 1%
-                important_features.append((feature_names[i], float(importance)))
+            if importance > 0.01:  # Nur Features mit Wichtigkeit > 1 %
+                important_features.append(
+                    (feature_names[i], float(importance))
+                )
 
         return sorted(important_features, key=lambda x: x[1], reverse=True)[:5]
 
@@ -203,4 +228,6 @@ class MLAnalyzer:
             with open(self.training_data_path, 'w') as f:
                 json.dump(self.training_data, f)
         except Exception as e:
-            logging.error(f"Fehler beim Speichern der Trainingsdaten: {str(e)}")
+            logging.error(
+                f"Fehler beim Speichern der Trainingsdaten: {str(e)}"
+            )
