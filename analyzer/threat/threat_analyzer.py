@@ -6,8 +6,7 @@ from typing import Dict, List, Optional
 import re
 import logging
 from urllib.parse import urlparse
-
-from .ml.ml_analyzer import MLAnalyzer
+from .ml_analyzer import MLAnalyzer
 from .threat_intelligence import ThreatIntelligence
 from .context_analyzer import ContextAwareAnalyzer
 from .threat_clustering import ThreatClusterAnalyzer
