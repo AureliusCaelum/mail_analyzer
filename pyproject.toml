@@ -13,19 +13,21 @@ authors = [
 ]
 dependencies = [
   "httpx",
+  "requests",
   "schedule",
   "numpy",
   "pandas",
   "scikit-learn",
   "joblib",
   "PyQt6",
-  "fpdf"
+  "matplotlib",
+  "fpdf",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest",
-  "flake8"
+  "flake8",
 ]
 
 [tool.pytest.ini_options]

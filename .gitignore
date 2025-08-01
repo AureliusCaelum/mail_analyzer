@@ -30,3 +30,7 @@ htmlcov/
 
 # Local configuration
 configuration.ini
+
+# Logs and models
+logs/
+models/
