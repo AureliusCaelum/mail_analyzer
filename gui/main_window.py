@@ -6,22 +6,23 @@ import os
 import configparser
 from PyQt6.QtWidgets import (
     QApplication,
-    QDialog,
-    QHBoxLayout,
-    QLabel,
-    QListWidget,
     QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QLabel,
+    QTextEdit,
+    QPushButton,
+    QTabWidget,
+    QSplitter,
     QProgressBar,
     QProgressDialog,
-    QPushButton,
-    QSplitter,
-    QTabWidget,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
     QMessageBox,
+    QDialog,
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QAction, QDesktopServices, QUrl
 
 from analyzer.email_scanner import get_scanner
@@ -36,6 +37,36 @@ from .threat_dashboard import ThreatDashboard
 from .context_config import ContextRuleConfig
 from .client_settings_dialog import ClientSettingsDialog
 from .email_list_item import EmailListItem
+
+
+class EmailRefreshWorker(QThread):
+    """Worker-Thread zum Abrufen und Analysieren von E-Mails."""
+
+    progress = pyqtSignal(int, int)
+    result = pyqtSignal(list)
+    error = pyqtSignal(str)
+
+    def __init__(self, scanner, analyzer, parent=None):
+        super().__init__(parent)
+        self._scanner = scanner
+        self._analyzer = analyzer
+
+    def run(self):
+        """Führt das Laden und Analysieren der E-Mails aus."""
+        try:
+            emails = self._scanner.get_emails(max_count=MAX_EMAILS_TO_SCAN)
+            total = len(emails) or 1
+            results = []
+
+            for index, email in enumerate(emails, start=1):
+                analysis = self._analyzer.analyze_email(email)
+                results.append((email, analysis))
+                self.progress.emit(index, total)
+
+            self.result.emit(results)
+        except Exception as exc:  # pragma: no cover - GUI feedback
+            self.error.emit(str(exc))
+
 
 class MainWindow(QMainWindow):
     """Main application window for the Mail Analyzer."""
@@ -205,43 +236,56 @@ class MainWindow(QMainWindow):
         dialog = ClientSettingsDialog(self.config, self)
         if dialog.exec():
             settings = dialog.get_settings()
-
-            # Konfiguration aktualisieren
             self.config['EMAIL']['client'] = settings['client']
             self.config['GMAIL']['credentials_file'] = settings['gmail_credentials']
             self.config['EXCHANGE']['client_id'] = settings['exchange_client_id']
             self.config['EXCHANGE']['tenant_id'] = settings['exchange_tenant_id']
             self.config['EXCHANGE']['client_secret'] = settings['exchange_secret']
-
-            # Konfiguration speichern
             with open('configuration.ini', 'w') as configfile:
                 self.config.write(configfile)
-
-            # Scanner neu initialisieren
             self.scanner = get_scanner()
             self.email_controller = EmailController(self.scanner, self.analyzer)
             self.refresh_emails()
-
             self.client_label.setText(
                 f"Aktiver Client: {self.scanner._client.name if self.scanner._client else 'Nicht verbunden'}"
             )
 
-    def refresh_emails(self) -> None:
-        """Refresh the email list by fetching and analysing messages."""
+    def refresh_emails(self):
+        """Startet das asynchrone Aktualisieren der E-Mail-Liste."""
         self.progress_bar.show()
-        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(0)
         self.refresh_button.setEnabled(False)
+        self.email_list.clear()
 
-        try:
-            self.email_list.clear()
-            for email, analysis in self.email_controller.fetch_emails(MAX_EMAILS_TO_SCAN):
-                item = EmailListItem(email, analysis)
-                self.email_list.addItem(item)
-        except Exception as exc:  # pragma: no cover - GUI message box
-            QMessageBox.critical(self, "Fehler", f"Fehler beim Laden der E-Mails: {exc}")
-        finally:
-            self.progress_bar.hide()
-            self.refresh_button.setEnabled(True)
+        self._refresh_worker = EmailRefreshWorker(self.scanner, self.analyzer)
+        self._refresh_worker.progress.connect(self._update_refresh_progress)
+        self._refresh_worker.result.connect(self._populate_email_list)
+        self._refresh_worker.error.connect(self._handle_refresh_error)
+        self._refresh_worker.finished.connect(self._refresh_finished)
+        self._refresh_worker.start()
+
+    def _update_refresh_progress(self, current, total):
+        """Aktualisiert den Fortschrittsbalken während des Ladens."""
+        total = total or 1
+        self.progress_bar.setRange(0, total)
+        self.progress_bar.setValue(min(current, total))
+
+    def _populate_email_list(self, results):
+        """Füllt die E-Mail-Liste mit den vom Worker gelieferten Daten."""
+        for email, analysis in results:
+            item = EmailListItem(email, analysis)
+            self.email_list.addItem(item)
+
+    def _handle_refresh_error(self, message):
+        """Zeigt eine Fehlermeldung aus dem Worker an."""
+        QMessageBox.critical(self, "Fehler", f"Fehler beim Laden der E-Mails: {message}")
+
+    def _refresh_finished(self):
+        """Beendet den Aktualisierungsvorgang und stellt den UI-Zustand wieder her."""
+        self.progress_bar.hide()
+        self.refresh_button.setEnabled(True)
+        self._refresh_worker = None
 
     def show_email_details(self, item):
         """Zeigt Details der ausgewählten E-Mail"""
@@ -267,12 +311,10 @@ class MainWindow(QMainWindow):
         analysis_text = "Gefundene Indikatoren:\n\n"
         for indicator in analysis['indicators']:
             analysis_text += f"• {indicator}\n"
-
         if 'analyzed_urls' in analysis and analysis['analyzed_urls']:
             analysis_text += "\nGefundene URLs:\n"
             for url in analysis['analyzed_urls']:
                 analysis_text += f"• {url}\n"
-
         self.analysis_details.setText(analysis_text)
 
         # Rohdaten-Tab
@@ -282,7 +324,6 @@ class MainWindow(QMainWindow):
     def check_for_updates(self):
         """Prüft auf verfügbare Updates"""
         update_info = self.update_manager.check_for_updates()
-
         if update_info:
             reply = QMessageBox.question(
                 self,
@@ -293,14 +334,12 @@ class MainWindow(QMainWindow):
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.Yes
             )
-
             if reply == QMessageBox.StandardButton.Yes:
                 self.download_and_install_update(update_info)
 
     def download_and_install_update(self, update_info):
         """Lädt das Update herunter und installiert es"""
         try:
-            # Download-Dialog
             progress = QProgressDialog(
                 "Update wird heruntergeladen...",
                 "Abbrechen",
@@ -311,18 +350,14 @@ class MainWindow(QMainWindow):
             progress.setWindowModality(Qt.WindowModality.WindowModal)
             progress.show()
 
-            # Update herunterladen
             download_path = os.path.join(os.path.dirname(__file__), "update.zip")
             if self.update_manager.download_update(update_info['download_url'], download_path):
                 progress.close()
-
-                # Installation
                 if self.update_manager.install_update(download_path):
                     QMessageBox.information(
                         self,
                         "Update erfolgreich",
-                        "Das Update wurde erfolgreich installiert. "
-                        "Bitte starten Sie die Anwendung neu."
+                        "Das Update wurde erfolgreich installiert. Bitte starten Sie die Anwendung neu."
                     )
                     QApplication.quit()
                 else:
@@ -424,29 +459,20 @@ class MainWindow(QMainWindow):
     def toggle_auto_reports(self, period):
         """Aktiviert oder deaktiviert automatische Berichte"""
         try:
-            # Konfiguration aktualisieren
             if not self.config.has_section('REPORTS'):
                 self.config.add_section('REPORTS')
-
             current = self.config.getboolean('REPORTS', f'{period}_reports', fallback=False)
             self.config['REPORTS'][f'{period}_reports'] = str(not current)
-
             with open('configuration.ini', 'w') as configfile:
                 self.config.write(configfile)
-
             status = "aktiviert" if not current else "deaktiviert"
             QMessageBox.information(
                 self,
                 "Automatische Berichte",
                 f"{period.capitalize()}-Berichte wurden {status}."
             )
-
         except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Fehler",
-                f"Fehler beim Ändern der Berichtseinstellungen: {str(e)}"
-            )
+            QMessageBox.critical(self, "Fehler", f"Fehler beim Ändern der Berichtseinstellungen: {str(e)}")
 
     def show_dashboard(self):
         """Zeigt das Threat Dashboard an"""
@@ -458,7 +484,6 @@ class MainWindow(QMainWindow):
 
         layout = QVBoxLayout(dialog)
         layout.addWidget(dashboard)
-
         dialog.show()
 
     def show_context_rules(self):
@@ -471,8 +496,8 @@ class MainWindow(QMainWindow):
 
         layout = QVBoxLayout(dialog)
         layout.addWidget(config)
-
         dialog.exec()
+
 
 def main():
     app = QApplication(sys.argv)
