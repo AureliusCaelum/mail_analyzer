@@ -5,13 +5,12 @@ Erkennt automatisch neue Bedrohungsmuster durch Clustering ähnlicher E-Mails
 import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import pandas as pd
 from datetime import datetime, timedelta
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 import json
 import os
+
 
 class ThreatClusterAnalyzer:
     def __init__(self, storage_dir: str = "models/clusters"):

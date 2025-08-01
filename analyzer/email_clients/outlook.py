@@ -15,6 +15,7 @@ except Exception:  # pragma: no cover - Modul möglicherweise nicht verfügbar
 
 from .base import EmailClientBase
 
+
 class OutlookClient(EmailClientBase):
     def __init__(self):
         self._outlook = None

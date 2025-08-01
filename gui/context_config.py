@@ -2,15 +2,16 @@
 Konfigurationsoberfläche für kontextbasierte Regeln
 """
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
-    QPushButton, QLabel, QLineEdit, QComboBox,
+    QWidget, QVBoxLayout, QHBoxLayout,
+    QPushButton, QLineEdit, QComboBox,
     QTreeWidget, QTreeWidgetItem, QDialog, QFormLayout,
-    QSpinBox, QMessageBox, QScrollArea
+    QSpinBox, QMessageBox
 )
 from PyQt6.QtCore import Qt
 import json
 import os
 from typing import Dict, List
+
 
 class RuleConfigDialog(QDialog):
     def __init__(self, parent=None):
@@ -83,8 +84,9 @@ class RuleConfigDialog(QDialog):
             "name": self.rule_name.text(),
             "target": self.target.currentText(),
             "condition": self.condition.text(),
-            "weight": self.weight.value()
+            "weight": self.weight.value(),
         }
+
 
 class ContextRuleConfig(QWidget):
     def __init__(self, context_analyzer, parent=None):

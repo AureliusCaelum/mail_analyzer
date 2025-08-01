@@ -230,7 +230,9 @@ class ThreatAnalyzer:
             for keyword in keywords:
                 if keyword in body_lower:
                     weight = SCORING_WEIGHTS['body'][f'{risk_level}_keyword']
-                    self.threat_indicators.append(f"{risk_level.replace('_', ' ').title()}-Schlüsselwort im Text: {keyword}")
+                    self.threat_indicators.append(
+                        f"{risk_level.replace('_', ' ').title()}-Schlüsselwort im Text: {keyword}"
+                    )
                     score += weight
 
         # URL-Überprüfung
@@ -314,4 +316,3 @@ class ThreatAnalyzer:
                 logging.warning(f"Fehler bei der URL-Analyse: {str(e)}")
 
         return score
-

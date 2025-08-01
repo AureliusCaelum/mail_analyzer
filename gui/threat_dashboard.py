@@ -14,6 +14,7 @@ from PyQt6.QtChart import (
 from typing import Dict
 from datetime import datetime
 
+
 class ThreatDashboard(QWidget):
     def __init__(self, threat_analyzer, parent=None):
         super().__init__(parent)

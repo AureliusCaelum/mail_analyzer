@@ -8,10 +8,12 @@ try:  # pragma: no cover - abhängigkeiten optional
 except Exception:  # pragma: no cover
     pytest.skip("Erforderliche Bibliotheken nicht verfügbar", allow_module_level=True)
 
+
 @pytest.fixture
 def threat_intel(monkeypatch):
     monkeypatch.setattr(ThreatIntelligence, "_initialize_ai_models", lambda self: None)
     return ThreatIntelligence()
+
 
 def test_local_ai_analysis(threat_intel, monkeypatch):
     """Test der lokalen KI-Analyse mit simulierten Modellantworten."""
@@ -32,6 +34,7 @@ def test_local_ai_analysis(threat_intel, monkeypatch):
     assert result["confidence"] == 0.9
     assert "phishing" in result["indicators"]
 
+
 def test_url_checking(threat_intel):
     """Test der URL-Überprüfung"""
     test_urls = [
@@ -45,6 +48,7 @@ def test_url_checking(threat_intel):
         assert 'safe_browsing' in result
         assert 'phishtank' in result
 
+
 def test_sender_reputation(threat_intel):
     """Test der Absender-Reputation"""
     test_domain = "example.com"
@@ -54,16 +58,18 @@ def test_sender_reputation(threat_intel):
     assert 'surbl' in result
     assert result['spamhaus'] in ['clean', 'blacklisted']
 
+
 def test_spam_score(threat_intel):
     """Test der Spam-Bewertung"""
     test_email = """
     Subject: GEWINNER! Sie haben 1.000.000€ gewonnen!
-    
+
     Herzlichen Glückwunsch! Sie wurden als Gewinner ausgewählt.
     Klicken Sie hier um Ihren Gewinn abzuholen: http://suspicious.win/claim
     """
     score = threat_intel.get_spam_score(test_email)
     assert score >= 0.0  # Sollte einen positiven Spam-Score haben
+
 
 def test_attachment_analysis(threat_intel, tmp_path):
     """Test der Anhangsprüfung"""
