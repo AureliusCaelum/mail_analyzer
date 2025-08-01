@@ -9,12 +9,10 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtChart import (
     QChart, QChartView, QPieSeries, QLineSeries,
-    QValueAxis, QBarSeries, QBarSet
+    QValueAxis, QBarSeries
 )
-import pandas as pd
-import numpy as np
-from typing import Dict, List
-from datetime import datetime, timedelta
+from typing import Dict
+from datetime import datetime
 
 class ThreatDashboard(QWidget):
     def __init__(self, threat_analyzer, parent=None):
@@ -289,12 +287,24 @@ class ThreatDashboard(QWidget):
             self.cluster_layout.itemAt(i).widget().setParent(None)
 
         # Füge neue Cluster hinzu
-        for cluster_id, data in clusters.get('clusters', {}).items():
+        for cluster_id, emails in clusters.get("clusters", {}).items():
             label = QLabel(f"Cluster {cluster_id}")
             label.setStyleSheet("font-weight: bold;")
             self.cluster_layout.addWidget(label)
 
-            details = QLabel(f"Größe: {len(data)}\nHäufige Merkmale: {', '.join(data[:3])}")
+            # Extrahiere aussagekräftige Strings aus den E-Mail-Dicts (z.B. Betreff)
+            subjects = [
+                str(email.get("subject", "")).strip()
+                for email in emails
+                if isinstance(email, dict)
+            ]
+            subjects = [s for s in subjects if s]
+
+            details_text = f"Größe: {len(emails)}"
+            if subjects:
+                details_text += f"\nHäufige Merkmale: {', '.join(subjects[:3])}"
+
+            details = QLabel(details_text)
             self.cluster_layout.addWidget(details)
 
     def _update_forecasts(self, trends: Dict):
@@ -313,6 +323,11 @@ class ThreatDashboard(QWidget):
         if 'next_week' in forecasts:
             self.forecast_labels['next_week'].setText(
                 f"Nächste Woche: {forecasts['next_week'].get('predicted_threats', 0)} Bedrohungen"
+            )
+
+        if 'confidence' in forecasts:
+            self.forecast_labels['confidence'].setText(
+                f"Konfidenz: {forecasts.get('confidence', 0):.2f}"
             )
 
         # Aktualisiere Vorhersage-Linie
