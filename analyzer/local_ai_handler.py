@@ -4,9 +4,10 @@ Lokale KI-Modelle Integration (Ollama und DeepSeek)
 import os
 import json
 import logging
-from typing import Dict, Optional, List
+from typing import Dict
 import httpx
 from concurrent.futures import ThreadPoolExecutor
+
 
 class LocalAIHandler:
     def __init__(self):
@@ -110,7 +111,7 @@ Antworte im JSON-Format."""
                 # Versuche JSON aus der Antwort zu extrahieren
                 try:
                     return json.loads(result['response'])
-                except:
+                except json.JSONDecodeError:
                     # Fallback für nicht-JSON Antworten
                     return {
                         "error": "Konnte Ollama-Antwort nicht parsen",
@@ -141,7 +142,7 @@ Antworte im JSON-Format."""
 
                 try:
                     return json.loads(result['choices'][0]['message']['content'])
-                except:
+                except json.JSONDecodeError:
                     return {
                         "error": "Konnte DeepSeek-Antwort nicht parsen",
                         "raw_response": result['choices'][0]['message']['content']
