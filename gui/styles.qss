@@ -1,0 +1,46 @@
+/* Basic application stylesheet for Mail Analyzer */
+QMainWindow {
+    background-color: #f5f5f5;
+}
+
+QPushButton {
+    background-color: #3498db;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px;
+}
+
+QPushButton:hover {
+    background-color: #2980b9;
+}
+
+QListWidget {
+    background-color: #ffffff;
+    border: 1px solid #bdc3c7;
+}
+
+QTabWidget::pane {
+    border: 1px solid #bdc3c7;
+}
+
+QTabBar::tab {
+    background: #e0e0e0;
+    padding: 8px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+QTabBar::tab:selected {
+    background: #ffffff;
+}
+
+QProgressBar {
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #3498db;
+}

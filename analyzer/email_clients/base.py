@@ -4,6 +4,7 @@ Basis-Interface für E-Mail-Client-Integrationen
 from abc import ABC, abstractmethod
 from typing import List, Dict
 
+
 class EmailClientBase(ABC):
     """Basis-Klasse für E-Mail-Client-Integrationen"""
 

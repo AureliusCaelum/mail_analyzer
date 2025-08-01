@@ -1,0 +1,10 @@
+fpdf
+httpx
+joblib
+matplotlib
+numpy
+pandas
+PyQt6
+requests
+schedule
+scikit-learn

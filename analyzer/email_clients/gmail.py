@@ -20,6 +20,7 @@ from .base import EmailClientBase
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
+
 class GmailClient(EmailClientBase):
     def __init__(self, credentials_file: str = 'credentials.json'):
         self._imap = None
@@ -98,7 +99,7 @@ class GmailClient(EmailClientBase):
                         if part.get_content_type() == "text/plain":
                             try:
                                 body = part.get_payload(decode=True).decode()
-                            except:
+                            except Exception:
                                 body = part.get_payload()
                         elif part.get_content_disposition() == 'attachment':
                             attachments.append(part.get_filename())
@@ -122,7 +123,7 @@ class GmailClient(EmailClientBase):
             try:
                 self._imap.close()
                 self._imap.logout()
-            except:
+            except Exception:
                 pass
             finally:
                 self._imap = None

@@ -8,9 +8,11 @@ try:  # pragma: no cover - abhängigkeiten optional
 except Exception:  # pragma: no cover - z.B. sklearn fehlt
     pytest.skip("Erforderliche Bibliotheken nicht verfügbar", allow_module_level=True)
 
+
 @pytest.fixture
 def analyzer():
     return ThreatAnalyzer()
+
 
 def test_analyze_email(analyzer):
     """Test der E-Mail-Analyse Funktion"""
@@ -26,6 +28,7 @@ def test_analyze_email(analyzer):
     assert "score" in result, "Ergebnis sollte einen Score enthalten"
     assert "level" in result, "Ergebnis sollte ein Bedrohungslevel enthalten"
     assert "indicators" in result, "Ergebnis sollte Bedrohungsindikatoren enthalten"
+
 
 def test_high_threat_email(analyzer):
     """Test einer E-Mail mit hohem Bedrohungspotential"""

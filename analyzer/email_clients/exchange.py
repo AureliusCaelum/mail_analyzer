@@ -3,9 +3,7 @@
 Dieses Modul nutzt die `msal`-Bibliothek. Ist sie nicht verfügbar, wird die
 Integration deaktiviert, ohne dass ein ImportError ausgelöst wird.
 """
-import json
 import logging
-import os
 from typing import List, Dict
 
 try:  # pragma: no cover - externe Abhängigkeit
@@ -19,6 +17,7 @@ except Exception:  # pragma: no cover - Modul möglicherweise nicht verfügbar
     msal = None
 
 from .base import EmailClientBase
+
 
 class ExchangeOnlineClient(EmailClientBase):
     def __init__(self, client_id: str, tenant_id: str, client_secret: str):

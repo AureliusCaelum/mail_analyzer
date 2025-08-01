@@ -5,9 +5,11 @@ import pytest
 from analyzer.traffic_light import TrafficLight
 from config.settings import THREAT_LEVELS
 
+
 @pytest.fixture
 def traffic_light():
     return TrafficLight()
+
 
 def test_display_threat_level(traffic_light):
     """Test der Bedrohungslevel-Anzeige"""
@@ -21,6 +23,7 @@ def test_display_threat_level(traffic_light):
     assert isinstance(result, str), "Ausgabe sollte ein String sein"
     assert "Bedrohungslevel" in result, "Ausgabe sollte Bedrohungslevel enthalten"
     assert "Score" in result, "Ausgabe sollte Score enthalten"
+
 
 def test_get_recommendation(traffic_light):
     """Test der Handlungsempfehlungen"""
