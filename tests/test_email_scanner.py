@@ -28,9 +28,6 @@ from analyzer.email_scanner import get_outlook_emails, scan_inbox  # noqa: E402
 # Ursprüngliches TrafficLight-Modul für nachfolgende Tests wiederherstellen
 sys.modules.pop("analyzer.traffic_light", None)
 
-# Entferne Stub, damit andere Tests das echte Modul laden können
-del sys.modules["analyzer.traffic_light"]
-
 
 def test_get_outlook_emails_dummy_scanner():
     """Testet den E-Mail-Abruf über einen gestubbten Outlook-Client."""
