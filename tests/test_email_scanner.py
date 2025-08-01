@@ -21,11 +21,11 @@ sys.modules["requests"] = MagicMock()
 sys.modules["colorama"] = MagicMock()
 
 # TrafficLight während des Imports stubben und anschließend zurücksetzen
-original_traffic_light = sys.modules.get("analyzer.threat.traffic_light")
+original_traffic_light = sys.modules.get("analyzer.traffic_light")
 mock_traffic_light = MagicMock()
 mock_traffic_light.analyze_threat_level = MagicMock()
 sys.modules.setdefault("analyzer.threat", types.ModuleType("analyzer.threat"))
-sys.modules["analyzer.threat.traffic_light"] = mock_traffic_light
+sys.modules["analyzer.traffic_light"] = mock_traffic_light
 
 import analyzer.email_scanner  # noqa: E402
 from analyzer.email_scanner import get_outlook_emails, scan_inbox  # noqa: E402
