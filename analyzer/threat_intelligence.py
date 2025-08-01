@@ -95,13 +95,23 @@ class ThreatIntelligence:
 
         return results
 
-    def _check_single_url(self, url: str) -> Dict:
-        """Überprüft eine einzelne URL gegen verschiedene Datenbanken"""
-        results = {}
+    def _check_single_url(self, url: str) -> Dict[str, str]:
+        """Überprüft eine einzelne URL gegen verschiedene Datenbanken.
+
+        Args:
+            url: Zu prüfende URL.
+
+        Returns:
+            Ergebnisse der Prüfungen pro Dienst.
+
+        Raises:
+            requests.RequestException: Falls eine externe Anfrage fehlschlägt.
+        """
+        results: Dict[str, str] = {}
 
         # Google Safe Browsing API Check
         try:
-            safe_browsing_url = f"https://safebrowsing.googleapis.com/v4/threatMatches:find"
+            safe_browsing_url = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
             payload = {
                 "client": {
                     "clientId": "your-client-id",
@@ -114,18 +124,22 @@ class ThreatIntelligence:
                     "threatEntries": [{"url": url}]
                 }
             }
-            response = requests.post(safe_browsing_url, json=payload)
-            results["safe_browsing"] = "clean" if response.status_code == 200 and not response.json() else "suspicious"
-        except:
-            results["safe_browsing"] = "error"
+            response = requests.post(safe_browsing_url, json=payload, timeout=10)
+            results["safe_browsing"] = (
+                "clean" if response.status_code == 200 and not response.json() else "suspicious"
+            )
+        except requests.RequestException as exc:
+            logging.error("Safe Browsing check failed: %s", exc)
+            raise
 
         # PhishTank Check
         try:
-            phishtank_url = f"http://checkurl.phishtank.com/checkurl/"
-            response = requests.post(phishtank_url, data={"url": url})
+            phishtank_url = "http://checkurl.phishtank.com/checkurl/"
+            response = requests.post(phishtank_url, data={"url": url}, timeout=10)
             results["phishtank"] = "suspicious" if "phish" in response.text.lower() else "clean"
-        except:
-            results["phishtank"] = "error"
+        except requests.RequestException as exc:
+            logging.error("PhishTank check failed: %s", exc)
+            raise
 
         return results
 
