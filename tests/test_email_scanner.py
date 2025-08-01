@@ -3,7 +3,6 @@
 
 import sys
 from unittest.mock import MagicMock, patch
-import pytest
 
 # Externe Abhängigkeiten mocken, damit Imports in email_scanner nicht fehlschlagen
 sys.modules["win32com"] = MagicMock()
@@ -23,8 +22,11 @@ mock_traffic_light = MagicMock()
 mock_traffic_light.analyze_threat_level = MagicMock()
 sys.modules["analyzer.traffic_light"] = mock_traffic_light
 
-import analyzer.email_scanner
-from analyzer.email_scanner import get_outlook_emails, scan_inbox
+import analyzer.email_scanner  # noqa: E402
+from analyzer.email_scanner import get_outlook_emails, scan_inbox  # noqa: E402
+
+# Ursprüngliches TrafficLight-Modul für nachfolgende Tests wiederherstellen
+sys.modules.pop("analyzer.traffic_light", None)
 
 # Entferne Stub, damit andere Tests das echte Modul laden können
 del sys.modules["analyzer.traffic_light"]
