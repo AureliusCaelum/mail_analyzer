@@ -4,11 +4,12 @@ Hauptfenster der Mail Analyzer GUI
 import sys
 import os
 import configparser
+from datetime import datetime
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QListWidgetItem, QLabel, QTextEdit, QPushButton,
-    QTabWidget, QSplitter, QProgressBar, QMessageBox, QComboBox,
-    QDialog, QFormLayout, QLineEdit, QDialogButtonBox, QMenu
+    QTabWidget, QSplitter, QProgressBar, QProgressDialog, QMessageBox,
+    QComboBox, QDialog, QFormLayout, QLineEdit, QDialogButtonBox, QMenu
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor, QFont, QAction
