@@ -26,6 +26,9 @@ sys.modules["analyzer.traffic_light"] = mock_traffic_light
 import analyzer.email_scanner
 from analyzer.email_scanner import get_outlook_emails, scan_inbox
 
+# Entferne Stub, damit andere Tests das echte Modul laden können
+del sys.modules["analyzer.traffic_light"]
+
 
 def test_get_outlook_emails_dummy_scanner():
     """Testet den E-Mail-Abruf über einen gestubbten Outlook-Client."""
