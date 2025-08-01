@@ -2,7 +2,6 @@
 Test-Suite für das Threat Intelligence Modul
 """
 import pytest
-import os
 
 try:  # pragma: no cover - abhängigkeiten optional
     from analyzer.threat_intelligence import ThreatIntelligence
@@ -75,3 +74,68 @@ def test_attachment_analysis(threat_intel, tmp_path):
     result = threat_intel.analyze_attachment(str(test_file))
     assert isinstance(result, dict)
     assert 'error' in result or all(k in result for k in ['malicious', 'suspicious', 'clean'])
+
+
+def test_attachment_hashing_is_streamed(threat_intel, monkeypatch):
+    """Stellt sicher, dass Anhänge nicht vollständig in den Speicher geladen werden."""
+    import io
+    import builtins
+    import hashlib
+
+    class TrackingFile(io.BytesIO):
+        def __init__(self, data: bytes):
+            super().__init__(data)
+            self.read_sizes: list[int] = []
+
+        def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+            self.read_sizes.append(size)
+            if size == -1:
+                raise AssertionError("File read without chunk size")
+            return super().read(size)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self.close()
+
+    data = b"a" * 10000
+    tracking_file = TrackingFile(data)
+
+    monkeypatch.setattr(builtins, "open", lambda *a, **k: tracking_file)
+    threat_intel.vt_api_key = "dummy"
+
+    called_url = {}
+
+    class DummyResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "data": {
+                    "attributes": {
+                        "last_analysis_stats": {
+                            "malicious": 0,
+                            "suspicious": 0,
+                            "undetected": 0,
+                        },
+                        "last_analysis_results": {},
+                    }
+                }
+            }
+
+    def fake_get(url, **kwargs):
+        called_url["url"] = url
+        return DummyResponse()
+
+    monkeypatch.setattr("analyzer.threat_intelligence.requests.get", fake_get)
+
+    threat_intel.analyze_attachment("dummy.bin")
+
+    expected_hash = hashlib.sha256(data).hexdigest()
+    assert expected_hash in called_url["url"]
+    assert len(tracking_file.read_sizes) > 1
+    assert -1 not in tracking_file.read_sizes
