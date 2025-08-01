@@ -1,13 +1,12 @@
- """
-Automatischer Report-Scheduler für periodische Berichtserstellung
-"""
+"""Automatischer Report-Scheduler für periodische Berichtserstellung."""
 import time
 import schedule
 import threading
 import logging
 from datetime import datetime
-from analyzer.report_generator import ReportGenerator
 import configparser
+
+from .report_generator import ReportGenerator
 
 class ReportScheduler:
     def __init__(self):

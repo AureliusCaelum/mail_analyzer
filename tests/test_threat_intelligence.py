@@ -4,7 +4,7 @@ Test-Suite für das Threat Intelligence Modul
 import pytest
 
 try:  # pragma: no cover - abhängigkeiten optional
-    from analyzer.threat_intelligence import ThreatIntelligence
+    from analyzer.threat.threat_intelligence import ThreatIntelligence
 except Exception:  # pragma: no cover
     pytest.skip("Erforderliche Bibliotheken nicht verfügbar", allow_module_level=True)
 
@@ -131,7 +131,7 @@ def test_attachment_hashing_is_streamed(threat_intel, monkeypatch):
         called_url["url"] = url
         return DummyResponse()
 
-    monkeypatch.setattr("analyzer.threat_intelligence.requests.get", fake_get)
+    monkeypatch.setattr("analyzer.threat.threat_intelligence.requests.get", fake_get)
 
     threat_intel.analyze_attachment("dummy.bin")
 

@@ -2,7 +2,7 @@
 import pytest
 
 try:  # pragma: no cover - abhängigkeiten optional
-    from analyzer.ml_analyzer import MLAnalyzer
+    from analyzer.ml.ml_analyzer import MLAnalyzer
 except Exception:  # pragma: no cover - sklearn o.Ä. nicht verfügbar
     MLAnalyzer = None
 

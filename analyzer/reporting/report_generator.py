@@ -11,7 +11,7 @@ from typing import Dict, List
 import pandas as pd
 from fpdf import FPDF
 
-from .utils import get_threat_level
+from ..utils import get_threat_level
 
 
 class ReportGenerator:

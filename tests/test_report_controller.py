@@ -1,6 +1,6 @@
 """Tests for ReportController."""
 
-from analyzer.report_controller import ReportController
+from analyzer.reporting.report_controller import ReportController
 
 
 class DummyItem:

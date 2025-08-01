@@ -29,7 +29,7 @@ try:  # pragma: no cover
 except Exception:  # pragma: no cover
     torch = None
 
-from .local_ai_handler import LocalAIHandler
+from ..ml.local_ai_handler import LocalAIHandler
 
 class ThreatIntelligence:
     def __init__(self):

@@ -6,12 +6,13 @@ from typing import Dict, List, Optional
 import re
 import logging
 from urllib.parse import urlparse
-from .ml_analyzer import MLAnalyzer
+
+from ..ml.ml_analyzer import MLAnalyzer
 from .threat_intelligence import ThreatIntelligence
-from .context_analyzer import ContextAwareAnalyzer
+from ..context_analyzer import ContextAwareAnalyzer
 from .threat_clustering import ThreatClusterAnalyzer
 from .proactive_defense import ProactiveThreatDefense
-from .utils import get_threat_level
+from ..utils import get_threat_level
 from config.settings import (
     SUSPICIOUS_EXTENSIONS,
     SUSPICIOUS_KEYWORDS,

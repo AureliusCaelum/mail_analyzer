@@ -3,6 +3,12 @@
 ## Overview
 The project provides an extensible platform for scanning emails, evaluating threats through rule-based checks and machine-learning techniques, and presenting the results in a desktop GUI. Configuration and logging are centralized in `config/settings.py` to control scanning limits, threat-level markers, and scoring weights used throughout the analysis pipeline.
 
+Core modules are grouped into subpackages for clarity:
+
+- `analyzer/threat/` contains threat analysis utilities such as `ThreatAnalyzer` and `TrafficLight`.
+- `analyzer/ml/` holds machine-learning helpers like `MLAnalyzer` and `LocalAIHandler`.
+- `analyzer/reporting/` bundles reporting components including `ReportGenerator`.
+
 ### Email Retrieval
 `EmailScanner` loads the appropriate mail client (Outlook, Gmail, or Exchange) and fetches messages while applying basic risk checks such as suspicious keywords, links, or attachments. It is wrapped by `EmailController`, which pairs each retrieved email with a detailed analysis.
 

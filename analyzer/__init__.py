@@ -13,7 +13,7 @@ except Exception:  # pragma: no cover - fehlende Abhängigkeiten
 
 # Optionaler Import, da Funktion in manchen Umgebungen nicht benötigt wird.
 try:  # pragma: no cover - optional Import
-    from .traffic_light import analyze_threat_level
+    from .threat.traffic_light import analyze_threat_level
 except Exception:  # pragma: no cover - fehlende Abhängigkeiten oder fehlende Funktion
     analyze_threat_level = None
 

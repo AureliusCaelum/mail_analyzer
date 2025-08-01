@@ -2,7 +2,7 @@
 Test-Suite für das Traffic Light System
 """
 import pytest
-from analyzer.traffic_light import TrafficLight
+from analyzer.threat.traffic_light import TrafficLight
 from config.settings import THREAT_LEVELS
 
 @pytest.fixture
