@@ -2,7 +2,7 @@
 
 import pytest
 
-from analyzer.ml.local_ai_handler import LocalAIHandler
+from analyzer.local_ai_handler import LocalAIHandler
 
 
 def test_analyze_email_content_combines_results(monkeypatch):
