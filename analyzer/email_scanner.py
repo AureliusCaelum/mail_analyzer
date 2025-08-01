@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from typing import Dict, List
 
 from config import settings
+from .utils import extract_links
 from .email_clients.base import EmailClientBase
 from .email_clients.outlook import OutlookClient
 from .email_clients.gmail import GmailClient
@@ -25,8 +26,6 @@ SUSPICIOUS_EXTENSIONS = tuple(
     for exts in settings.SUSPICIOUS_EXTENSIONS.values()
     for ext in exts
 )
-
-URL_PATTERN = re.compile(r"https?://[^\s]+")
 SHORTENER_PATTERN = re.compile(r"(bit\.ly|tinyurl|goo\.gl|ow\.ly)", re.IGNORECASE)
 SUSPICIOUS_LINK_PATTERN = re.compile(r"(login|verify|secure|bank|konto)", re.IGNORECASE)
 
@@ -118,7 +117,7 @@ def scan_email(email, trusted_domains=None):
             issues.append(f"Verdächtiges Schlüsselwort gefunden: '{keyword}'")
 
     # Check for suspicious links
-    for link in URL_PATTERN.findall(body):
+    for link in extract_links(body):
         if SHORTENER_PATTERN.search(link):
             issues.append(f"Verdächtiger Kurzlink gefunden: {link}")
         if SUSPICIOUS_LINK_PATTERN.search(link):
@@ -139,20 +138,20 @@ def scan_email(email, trusted_domains=None):
     return risk, issues
 
 def determine_risk_level(issues: List[str]) -> str:
-    """Map detected issues to a risk color.
+    """Map detected issues to a configured threat level.
 
     Args:
         issues (list[str]): Collection of issue descriptions.
 
     Returns:
-        str: "red" if critical issues exist, "yellow" for warnings and
-            "green" when no issues were found.
+        str: Emoji from :data:`config.settings.THREAT_LEVELS` representing the
+            assessed risk.
     """
     if any("Verdächtiger Anhang" in i or "Verdächtiger Link" in i for i in issues):
-        return "red"
-    elif issues:
-        return "yellow"
-    return "green"
+        return settings.THREAT_LEVELS["HIGH"]
+    if issues:
+        return settings.THREAT_LEVELS["MEDIUM"]
+    return settings.THREAT_LEVELS["LOW"]
 
 def scan_inbox(max_count: int = 20, trusted_domains=None):
     """Scannt E-Mails im Posteingang und bewertet deren Risiko.
