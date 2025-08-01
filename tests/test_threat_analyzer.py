@@ -4,7 +4,7 @@ Test-Suite für den Threat Analyzer
 import pytest
 
 try:  # pragma: no cover - abhängigkeiten optional
-    from analyzer.threat.threat_analyzer import ThreatAnalyzer
+    from analyzer.threat_analyzer import ThreatAnalyzer
 except Exception:  # pragma: no cover - z.B. sklearn fehlt
     pytest.skip("Erforderliche Bibliotheken nicht verfügbar", allow_module_level=True)
 
