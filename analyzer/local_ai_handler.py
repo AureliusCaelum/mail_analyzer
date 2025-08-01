@@ -43,8 +43,15 @@ class LocalAIHandler:
             logging.warning(f"DeepSeek nicht verfügbar: {str(e)}")
             return False
 
-    async def analyze_email_content(self, email_data: Dict) -> Dict:
-        """Analysiert E-Mail-Inhalt mit verfügbaren lokalen KI-Modellen"""
+    def analyze_email_content(self, email_data: Dict) -> Dict:
+        """Analysiert E-Mail-Inhalt mit verfügbaren lokalen KI-Modellen.
+
+        Args:
+            email_data (Dict): E-Mail-Daten mit Betreff, Inhalt und weiteren Feldern.
+
+        Returns:
+            Dict: Kombinierte Analyseergebnisse der verfügbaren Modelle.
+        """
         results = {}
 
         # Bereite den Prompt vor

@@ -1,3 +1,4 @@
+ 
 """
 Threat Intelligence Modul
 Integriert verschiedene Malware- und Spam-Datenbanken sowie KI-Modelle
@@ -5,7 +6,7 @@ Integriert verschiedene Malware- und Spam-Datenbanken sowie KI-Modelle
 import os
 import hashlib
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 from concurrent.futures import ThreadPoolExecutor
 
 try:  # pragma: no cover - optionale Abhängigkeiten
@@ -75,9 +76,7 @@ class ThreatIntelligence:
                 file_hash = hashlib.sha256(f.read()).hexdigest()
 
             # VirusTotal API Abfrage
-            headers = {
-                "x-apikey": self.vt_api_key
-            }
+            headers = {"x-apikey": self.vt_api_key}
             if requests is None:
                 return {"error": "requests nicht verfügbar"}
 
@@ -121,13 +120,23 @@ class ThreatIntelligence:
 
         return results
 
-    def _check_single_url(self, url: str) -> Dict:
-        """Überprüft eine einzelne URL gegen verschiedene Datenbanken"""
-        results = {}
+    def _check_single_url(self, url: str) -> Dict[str, str]:
+        """Überprüft eine einzelne URL gegen verschiedene Datenbanken.
+
+        Args:
+            url: Zu prüfende URL.
+
+        Returns:
+            Ergebnisse der Prüfungen pro Dienst.
+
+        Raises:
+            requests.RequestException: Falls eine externe Anfrage fehlschlägt.
+        """
+        results: Dict[str, str] = {}
 
         # Google Safe Browsing API Check
         try:
-            safe_browsing_url = f"https://safebrowsing.googleapis.com/v4/threatMatches:find"
+            safe_browsing_url = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
             payload = {
                 "client": {
                     "clientId": "your-client-id",
@@ -143,20 +152,24 @@ class ThreatIntelligence:
             if requests is None:
                 results["safe_browsing"] = "error"
             else:
-                response = requests.post(safe_browsing_url, json=payload)
-                results["safe_browsing"] = "clean" if response.status_code == 200 and not response.json() else "suspicious"
-        except Exception:  # pragma: no cover - Netzwerkausnahme
+                response = requests.post(safe_browsing_url, json=payload, timeout=10)
+                results["safe_browsing"] = (
+                    "clean" if response.status_code == 200 and not response.json() else "suspicious"
+                )
+        except requests.RequestException as exc:
+            logging.error("Safe Browsing check failed: %s", exc)
             results["safe_browsing"] = "error"
 
         # PhishTank Check
         try:
-            phishtank_url = f"http://checkurl.phishtank.com/checkurl/"
+            phishtank_url = "http://checkurl.phishtank.com/checkurl/"
             if requests is None:
                 results["phishtank"] = "error"
             else:
-                response = requests.post(phishtank_url, data={"url": url})
+                response = requests.post(phishtank_url, data={"url": url}, timeout=10)
                 results["phishtank"] = "suspicious" if "phish" in response.text.lower() else "clean"
-        except Exception:  # pragma: no cover
+        except requests.RequestException as exc:
+            logging.error("PhishTank check failed: %s", exc)
             results["phishtank"] = "error"
 
         return results
