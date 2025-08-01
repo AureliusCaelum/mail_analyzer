@@ -65,29 +65,43 @@ class EmailScanner:
                 self._client.disconnect()
 
 def scan_email(email, trusted_domains=None):
-    """
-    Scans an email for potential security issues and determines its risk level.
+    """Analyze an email for potential security issues and determine its risk level.
+
+    The function safely handles missing fields by using default values when accessing
+    the email dictionary and validates the sender against a list of trusted domains.
+
     Args:
-        email (dict): A dictionary representing the email with keys such as "subject", "body", "sender", and optionally "attachments".
+        email (dict): Email data with keys such as "subject", "body", "sender" and
+            optionally "attachments".
+        trusted_domains (list[str], optional): Domain suffixes that are considered
+            trusted. Defaults to ["@ihrefirma.de", "@vertrauenswuerdig.de"] if not
+            provided.
+
     Returns:
-        tuple: A tuple containing:
-            - risk (str): The determined risk level (e.g., "green", "yellow", "red").
-            - issues (list of str): A list of strings describing any detected issues.
+        tuple[str, list[str]]: Risk level and list of detected issues.
+
     The function checks for:
         - Suspicious keywords in the subject and body.
         - Suspicious or shortened links in the body.
         - Suspicious file extensions in attachments.
         - Unknown or external senders.
     """
+    if trusted_domains is None:
+        trusted_domains = ["@ihrefirma.de", "@vertrauenswuerdig.de"]
+
+    subject = email.get("subject", "") or ""
+    body = email.get("body", "") or ""
+    sender = email.get("sender", "") or ""
+
     issues = []
 
     # Check for suspicious keywords in subject and body
     for keyword in SUSPICIOUS_KEYWORDS:
-        if keyword.lower() in (email["subject"] or "").lower() or keyword.lower() in (email["body"] or "").lower():
+        if keyword.lower() in subject.lower() or keyword.lower() in body.lower():
             issues.append(f"Verdächtiges Schlüsselwort gefunden: '{keyword}'")
 
     # Check for suspicious links
-    links = re.findall(r'https?://[^\s]+', email["body"] or "")
+    links = re.findall(r'https?://[^\s]+', body)
     for link in links:
         if any(domain in link for domain in ["bit.ly", "tinyurl", "goo.gl", "ow.ly"]):
             issues.append(f"Verdächtiger Kurzlink gefunden: {link}")
@@ -100,8 +114,8 @@ def scan_email(email, trusted_domains=None):
             issues.append(f"Verdächtiger Anhang: {att}")
 
     # Check for unknown sender (simple heuristic)
-    if not email["sender"].endswith(("@ihrefirma.de", "@vertrauenswuerdig.de")):
-        issues.append(f"Unbekannter oder externer Absender: {email['sender']}")
+    if not any(sender.endswith(domain) for domain in trusted_domains):
+        issues.append(f"Unbekannter oder externer Absender: {sender}")
 
     # Determine risk level
     risk = determine_risk_level(issues)
@@ -116,8 +130,20 @@ def determine_risk_level(issues):
     else:
         return "green"
 
-def scan_inbox(folder_name="Posteingang", max_count=20, trusted_domains=None):
-    emails = get_outlook_emails(folder_name, max_count)
+def scan_inbox(folder_name: str = "Posteingang", max_count: int = 20, trusted_domains=None):
+    """Scannt E-Mails im Posteingang und bewertet deren Risiko.
+
+    Args:
+        folder_name (str): Name des Outlook-Ordners. Der Parameter ist
+            aktuell nur ein Platzhalter und hat keine Auswirkung.
+        max_count (int): Maximale Anzahl abzurufender E-Mails.
+        trusted_domains (list[str] | None): Liste vertrauenswürdiger Domains,
+            die bei der Bewertung berücksichtigt werden.
+
+    Returns:
+        List[Dict]: Eine Liste mit Ergebnissen pro E-Mail.
+    """
+    emails = get_outlook_emails(max_count=max_count)
     results = []
     for email in emails:
         risk, issues = scan_email(email, trusted_domains=trusted_domains)
@@ -125,7 +151,7 @@ def scan_inbox(folder_name="Posteingang", max_count=20, trusted_domains=None):
             "subject": email["subject"],
             "sender": email["sender"],
             "risk": risk,
-            "issues": issues
+            "issues": issues,
         })
     return results
 

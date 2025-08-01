@@ -1,101 +1,79 @@
-"""Testkonfigurationen und Fixtures."""
+"""Test configuration and environment stubs."""
 
 import sys
 import types
 
-# Stub-Modul für win32com, um Tests ohne Windows-Abhängigkeiten zu ermöglichen.
-win32com = types.ModuleType("win32com")
-win32com.client = types.ModuleType("win32com.client")
-sys.modules.setdefault("win32com", win32com)
-sys.modules.setdefault("win32com.client", win32com.client)
+def _ensure_module(name: str) -> types.ModuleType:
+    module = types.ModuleType(name)
+    sys.modules.setdefault(name, module)
+    return sys.modules[name]
 
-# Stub-Module für Google-APIs, um externe Abhängigkeiten zu vermeiden.
-google = types.ModuleType("google")
-oauth2 = types.ModuleType("google.oauth2")
-credentials = types.ModuleType("credentials")
-class _DummyCredentials:
-    pass
-credentials.Credentials = _DummyCredentials
-oauth2.credentials = credentials
-google.oauth2 = oauth2
-sys.modules.setdefault("google", google)
-sys.modules.setdefault("google.oauth2", oauth2)
-sys.modules.setdefault("google.oauth2.credentials", credentials)
+# Stub win32com so that Outlook-related modules can be imported on any system.
+win32com = _ensure_module("win32com")
+win32com.client = _ensure_module("win32com.client")
 
-google_auth_oauthlib = types.ModuleType("google_auth_oauthlib")
-flow = types.ModuleType("google_auth_oauthlib.flow")
+# Stub a minimal subset of the Google modules used by gmail.py and OAuth flows.
+google = _ensure_module("google")
+google.oauth2 = _ensure_module("google.oauth2")
+google.oauth2.credentials = _ensure_module("google.oauth2.credentials")
+google.oauth2.credentials.Credentials = object
 
+google_auth = _ensure_module("google.auth")
+google_auth.transport = _ensure_module("google.auth.transport")
+google_auth.transport.requests = _ensure_module("google.auth.transport.requests")
+google_auth.transport.requests.Request = object
+
+# Stub google_auth_oauthlib for local server flows.
+google_auth_oauthlib = _ensure_module("google_auth_oauthlib")
+google_auth_oauthlib.flow = _ensure_module("google_auth_oauthlib.flow")
 class _DummyInstalledAppFlow:
     @classmethod
-    def from_client_secrets_file(cls, *args, **kwargs):  # pragma: no cover - stub
+    def from_client_secrets_file(cls, *args, **kwargs):
         return cls()
+    def run_local_server(self, *args, **kwargs):
+        return google.oauth2.credentials.Credentials()
+google_auth_oauthlib.flow.InstalledAppFlow = _DummyInstalledAppFlow
 
-    def run_local_server(self, *args, **kwargs):  # pragma: no cover - stub
-        return _DummyCredentials()
+# Stub msal for Exchange client imports.
+_ensure_module("msal")
 
-flow.InstalledAppFlow = _DummyInstalledAppFlow
-google_auth_oauthlib.flow = flow
-sys.modules.setdefault("google_auth_oauthlib", google_auth_oauthlib)
-sys.modules.setdefault("google_auth_oauthlib.flow", flow)
+# Stub requests since it's imported by some clients.
+requests = _ensure_module("requests")
+requests.get = lambda *args, **kwargs: types.SimpleNamespace(status_code=200, json=lambda: {})
+requests.post = lambda *args, **kwargs: types.SimpleNamespace(status_code=200, json=lambda: {})
 
-colorama = types.ModuleType("colorama")
-class _DummyFore:
-    RED = GREEN = YELLOW = RESET = ""
+# Stub colorama used by various CLI utilities.
+colorama = _ensure_module("colorama")
+colorama.Fore = types.SimpleNamespace(RED="", YELLOW="", GREEN="", WHITE="")
+colorama.Style = types.SimpleNamespace(RESET_ALL="")
+colorama.init = lambda *args, **kwargs: None
 
-class _DummyStyle:
-    RESET_ALL = ""
-
-def _dummy_init(*args, **kwargs):  # pragma: no cover - stub
-    return None
-
-colorama.Fore = _DummyFore()
-colorama.Style = _DummyStyle()
-colorama.init = _dummy_init
-sys.modules.setdefault("colorama", colorama)
-
-httpx = types.ModuleType("httpx")
-
+# Stub httpx for HTTP client usages.
+httpx = _ensure_module("httpx")
 class _DummyHttpxClient:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __enter__(self):  # pragma: no cover - stub
-        return self
-
-    def __exit__(self, *args):  # pragma: no cover - stub
-        return False
-
-    def get(self, *args, **kwargs):  # pragma: no cover - stub
-        return types.SimpleNamespace(status_code=200, json=lambda: {})
-
-    def post(self, *args, **kwargs):  # pragma: no cover - stub
-        return types.SimpleNamespace(status_code=200, json=lambda: {}, raise_for_status=lambda: None)
-
+    def __init__(self, *args, **kwargs): pass
+    def __enter__(self): return self
+    def __exit__(self, *args): return False
+    def get(self, *args, **kwargs): return types.SimpleNamespace(status_code=200, json=lambda: {})
+    def post(self, *args, **kwargs): return types.SimpleNamespace(status_code=200, json=lambda: {}, raise_for_status=lambda: None)
 httpx.Client = _DummyHttpxClient
-sys.modules.setdefault("httpx", httpx)
 
-requests = types.ModuleType("requests")
-requests.get = lambda *args, **kwargs: types.SimpleNamespace(status_code=200, json=lambda: {})  # pragma: no cover - stub
-requests.post = lambda *args, **kwargs: types.SimpleNamespace(status_code=200, json=lambda: {})  # pragma: no cover - stub
-sys.modules.setdefault("requests", requests)
+# Stub transformers pipeline for ML inference.
+transformers = _ensure_module("transformers")
+transformers.pipeline = lambda *args, **kwargs: (lambda x: [])
 
-transformers = types.ModuleType("transformers")
-transformers.pipeline = lambda *args, **kwargs: lambda x: []  # pragma: no cover - stub
-sys.modules.setdefault("transformers", transformers)
-
-sentence_transformers = types.ModuleType("sentence_transformers")
-
+# Stub sentence_transformers for embedding generation.
+sentence_transformers = _ensure_module("sentence_transformers")
 class _DummySentenceTransformer:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def encode(self, *args, **kwargs):  # pragma: no cover - stub
-        return [0.0]
-
+    def __init__(self, *args, **kwargs): pass
+    def encode(self, *args, **kwargs): return [0.0]
 sentence_transformers.SentenceTransformer = _DummySentenceTransformer
-sys.modules.setdefault("sentence_transformers", sentence_transformers)
 
-torch = types.ModuleType("torch")
-torch.tensor = lambda x: x  # pragma: no cover - stub
-torch.nn = types.SimpleNamespace(functional=types.SimpleNamespace(cosine_similarity=lambda a, b, dim: [0.0]))
-sys.modules.setdefault("torch", torch)
+# Stub torch for tensor operations in tests.
+torch = _ensure_module("torch")
+torch.tensor = lambda x: x
+torch.nn = types.SimpleNamespace(
+    functional=types.SimpleNamespace(
+        cosine_similarity=lambda a, b, dim: [0.0]
+    )
+)
