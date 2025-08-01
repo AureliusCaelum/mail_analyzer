@@ -26,12 +26,12 @@ from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QAction, QDesktopServices, QUrl
 
 from analyzer.email_scanner import get_scanner
-from analyzer.threat.threat_analyzer import ThreatAnalyzer
-from analyzer.threat.traffic_light import TrafficLight
+from analyzer.threat_analyzer import ThreatAnalyzer
+from analyzer.traffic_light import TrafficLight
 from analyzer.update_manager import UpdateManager
-from analyzer.reporting.report_generator import ReportGenerator
+from analyzer.report_generator import ReportGenerator
 from analyzer.email_controller import EmailController
-from analyzer.reporting.report_controller import ReportController
+from analyzer.report_controller import ReportController
 from config.settings import MAX_EMAILS_TO_SCAN
 from .threat_dashboard import ThreatDashboard
 from .context_config import ContextRuleConfig
