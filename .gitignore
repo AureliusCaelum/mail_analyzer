@@ -1,0 +1,17 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+
+# OS files
+.DS_Store
+
+# Logs and models
+logs/
+models/

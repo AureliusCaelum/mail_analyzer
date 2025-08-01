@@ -1,0 +1,27 @@
+[project]
+name = "mail_analyzer"
+version = "0.1.0"
+description = "Email threat analysis and reporting tool with GUI"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "joblib",
+    "httpx",
+    "requests",
+    "schedule",
+    "scikit-learn",
+    "PyQt6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "flake8",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
