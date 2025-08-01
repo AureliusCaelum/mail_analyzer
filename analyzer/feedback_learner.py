@@ -6,22 +6,40 @@ import os
 import json
 import logging
 from typing import Dict, List
-import numpy as np
+
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib
 from datetime import datetime
 
+
 class FeedbackLearner:
-    def __init__(self, model_dir: str = "models/feedback"):
+    def __init__(
+        self,
+        model_dir: str = "models/feedback",
+        original_weight: float = 0.7,
+        feedback_weight: float = 0.3,
+        feedback_scale: float = 10.0,
+        confidence_threshold: float = 0.8,
+        high_confidence_threshold: float = 0.9,
+    ):
+        """Initialisiere FeedbackLearner.
+
+        Args:
+            model_dir: Verzeichnis zur Speicherung des Modells.
+            original_weight: Gewicht der ursprünglichen Analyse.
+            feedback_weight: Gewicht des Feedback-Modells.
+            feedback_scale: Skalierung des Feedback-Scores.
+            confidence_threshold: Mindestkonfidenz für Anpassungen.
+            high_confidence_threshold: Schwelle für das Hinzufügen eines Indikators.
+        """
         self.model_dir = model_dir
         self.feedback_file = os.path.join(model_dir, "feedback_data.json")
         self.model_file = os.path.join(model_dir, "feedback_model.joblib")
         self.vectorizer_file = os.path.join(model_dir, "feedback_vectorizer.joblib")
+        self.version_file = os.path.join(model_dir, "feedback_model.version")
 
-        # Erstelle Verzeichnis falls nicht vorhanden
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
+        os.makedirs(model_dir, exist_ok=True)
 
         self.feedback_data = self._load_feedback_data()
         self.model = self._load_model()
@@ -30,6 +48,13 @@ class FeedbackLearner:
         # Schwellenwerte für Modellanpassung
         self.min_feedback_samples = 50
         self.retraining_threshold = 10  # Neue Samples für Neutraining
+
+        # Gewichtungen für adjust_analysis
+        self.original_weight = original_weight
+        self.feedback_weight = feedback_weight
+        self.feedback_scale = feedback_scale
+        self.confidence_threshold = confidence_threshold
+        self.high_confidence_threshold = high_confidence_threshold
 
     def add_feedback(self, email_data: Dict, analysis_result: Dict, user_feedback: Dict) -> None:
         """
@@ -80,16 +105,16 @@ class FeedbackLearner:
             confidence = max(feedback_score)
 
             # Wenn Konfidenz hoch genug, passe Analyse an
-            if confidence > 0.8:
+            if confidence > self.confidence_threshold:
                 adjusted_score = (
-                    preliminary_analysis["score"] * 0.7 +  # Ursprüngliche Analyse
-                    feedback_score[1] * 10 * 0.3          # Feedback-basierte Analyse
+                    preliminary_analysis["score"] * self.original_weight +
+                    feedback_score[1] * self.feedback_scale * self.feedback_weight
                 )
 
                 preliminary_analysis["score"] = min(10.0, adjusted_score)
                 preliminary_analysis["feedback_confidence"] = confidence
 
-                if confidence > 0.9:
+                if confidence > self.high_confidence_threshold:
                     preliminary_analysis["indicators"].append(
                         "Anpassung basierend auf Unternehmensfeedback"
                     )
@@ -219,10 +244,12 @@ class FeedbackLearner:
             return None
 
     def _save_models(self) -> None:
-        """Speichert Modell und Vectorizer"""
+        """Speichert Modell, Vectorizer und Version"""
         try:
             joblib.dump(self.model, self.model_file)
             joblib.dump(self.vectorizer, self.vectorizer_file)
+            with open(self.version_file, "w", encoding="utf-8") as version_file:
+                version_file.write(datetime.now().isoformat())
         except Exception as e:
             logging.error(f"Fehler beim Speichern der Modelle: {str(e)}")
 
@@ -232,12 +259,13 @@ class FeedbackLearner:
             return datetime.fromtimestamp(
                 os.path.getmtime(self.model_file)
             ).isoformat()
-        except:
+        except Exception:
             return "Unbekannt"
 
     def _get_model_version(self) -> str:
-        """Ermittelt die aktuelle Modellversion"""
+        """Liest die gespeicherte Modellversion"""
         try:
-            return f"v{len(self.feedback_data)}"
-        except:
-            return "v0"
+            with open(self.version_file, "r", encoding="utf-8") as version_file:
+                return version_file.read().strip()
+        except Exception:
+            return "unbekannt"

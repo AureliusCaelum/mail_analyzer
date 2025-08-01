@@ -101,7 +101,7 @@ def test_scan_inbox_uses_max_count(monkeypatch):
     mock_get = MagicMock(return_value=[dummy_email])
     monkeypatch.setattr(analyzer.email_scanner, "get_outlook_emails", mock_get)
 
-    results = scan_inbox(folder_name="ignored", max_count=5)
+    results = scan_inbox(max_count=5)
 
     mock_get.assert_called_once_with(max_count=5)
     assert results[0]["subject"] == "Hallo"
