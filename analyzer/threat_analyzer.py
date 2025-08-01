@@ -11,10 +11,15 @@ from .threat_intelligence import ThreatIntelligence
 from .context_analyzer import ContextAwareAnalyzer
 from .threat_clustering import ThreatClusterAnalyzer
 from .proactive_defense import ProactiveThreatDefense
+from .utils import get_threat_level
 from config.settings import (
-    THREAT_LEVELS, SUSPICIOUS_EXTENSIONS, SUSPICIOUS_KEYWORDS,
-    SUSPICIOUS_URL_PATTERNS, SUSPICIOUS_TLD, SCORING_WEIGHTS
+    SUSPICIOUS_EXTENSIONS,
+    SUSPICIOUS_KEYWORDS,
+    SUSPICIOUS_URL_PATTERNS,
+    SUSPICIOUS_TLD,
+    SCORING_WEIGHTS,
 )
+
 
 class ThreatAnalyzer:
     def __init__(self):
@@ -94,7 +99,7 @@ class ThreatAnalyzer:
 
         return {
             'score': round(self.threat_score, 2),
-            'level': self._get_threat_level(),
+            'level': get_threat_level(self.threat_score, use_icon=True),
             'indicators': self.threat_indicators,
             'analyzed_urls': list(self.urls_found),
             'ml_confidence': ml_confidence,
@@ -310,10 +315,3 @@ class ThreatAnalyzer:
 
         return score
 
-    def _get_threat_level(self) -> str:
-        """Bestimmt das Bedrohungslevel basierend auf dem Score"""
-        if self.threat_score >= 7.0:
-            return THREAT_LEVELS["HIGH"]
-        elif self.threat_score >= 4.0:
-            return THREAT_LEVELS["MEDIUM"]
-        return THREAT_LEVELS["LOW"]
