@@ -315,6 +315,11 @@ class ThreatDashboard(QWidget):
                 f"Nächste Woche: {forecasts['next_week'].get('predicted_threats', 0)} Bedrohungen"
             )
 
+        if 'confidence' in forecasts:
+            self.forecast_labels['confidence'].setText(
+                f"Konfidenz: {forecasts.get('confidence', 0):.2f}"
+            )
+
         # Aktualisiere Vorhersage-Linie
         self.forecast_series.clear()
         current_time = datetime.now().timestamp()
