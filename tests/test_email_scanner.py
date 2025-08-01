@@ -19,10 +19,6 @@ sys.modules["google.auth.transport.requests"] = MagicMock()
 sys.modules["msal"] = MagicMock()
 sys.modules["requests"] = MagicMock()
 sys.modules["colorama"] = MagicMock()
-mock_traffic_light = MagicMock()
-mock_traffic_light.analyze_threat_level = MagicMock()
-sys.modules["analyzer.traffic_light"] = mock_traffic_light
-
 import analyzer.email_scanner
 from analyzer.email_scanner import get_outlook_emails, scan_inbox
 

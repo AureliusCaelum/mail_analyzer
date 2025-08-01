@@ -1,12 +1,20 @@
-"""
-Update-Manager für automatische Software-Updates
-"""
+"""Update-Manager für automatische Software-Updates."""
+
 import os
 import json
 import logging
-import requests
 from datetime import datetime
-from packaging import version
+from typing import Optional
+
+try:  # pragma: no cover - ImportError handling
+    import requests
+except ImportError:  # pragma: no cover - requests not installed
+    requests = None  # type: ignore[assignment]
+
+try:  # pragma: no cover - ImportError handling
+    from packaging import version
+except ImportError:  # pragma: no cover - packaging not installed
+    version = None  # type: ignore[assignment]
 
 class UpdateManager:
     def __init__(self):
@@ -15,54 +23,80 @@ class UpdateManager:
         self.update_info_file = "update_info.json"
         self.last_check = None
 
-    def check_for_updates(self) -> dict:
-        """
-        Prüft, ob Updates verfügbar sind
+    def check_for_updates(self) -> Optional[dict]:
+        """Prüft, ob Updates verfügbar sind.
+
         Returns:
-            dict: Update-Informationen oder None wenn kein Update verfügbar
+            Optional[dict]: Update-Informationen oder ``None``.
         """
+        if requests is None:
+            logging.error(
+                "Das Modul 'requests' ist nicht installiert. Bitte installieren Sie es, "
+                "um nach Updates suchen zu können."
+            )
+            return None
+        if version is None:
+            logging.error(
+                "Das Modul 'packaging' ist nicht installiert. Bitte installieren Sie es, "
+                "um Versionen vergleichen zu können."
+            )
+            return None
+
         try:
             # Prüfe nicht öfter als einmal täglich
             if self._should_check():
                 response = requests.get(self.github_api_url)
                 response.raise_for_status()
                 latest_release = response.json()
-                
+
                 latest_version = latest_release["tag_name"].lstrip("v")
-                
+
                 if version.parse(latest_version) > version.parse(self.current_version):
                     update_info = {
                         "version": latest_version,
                         "description": latest_release["body"],
                         "download_url": latest_release["assets"][0]["browser_download_url"],
-                        "last_checked": datetime.now().isoformat()
+                        "last_checked": datetime.now().isoformat(),
                     }
                     self._save_update_info(update_info)
                     return update_info
-                
+
                 self._save_last_check()
-            
+
             return None
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - network errors
             logging.error(f"Fehler bei der Update-Prüfung: {str(e)}")
             return None
 
     def download_update(self, download_url: str, target_path: str) -> bool:
+        """Lädt das Update herunter.
+
+        Args:
+            download_url (str): URL des Updates.
+            target_path (str): Pfad zum Speichern des Updates.
+
+        Returns:
+            bool: ``True`` bei Erfolg, sonst ``False``.
         """
-        Lädt das Update herunter
-        """
+        if requests is None:
+            logging.error(
+                "Das Modul 'requests' ist nicht installiert. Bitte installieren Sie es, "
+                "um Updates herunterladen zu können."
+            )
+            return False
+
         try:
             response = requests.get(download_url, stream=True)
             response.raise_for_status()
-            
-            with open(target_path, 'wb') as f:
+
+            with open(target_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
-            
+
             return True
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - network errors
             logging.error(f"Fehler beim Download des Updates: {str(e)}")
             return False
 
