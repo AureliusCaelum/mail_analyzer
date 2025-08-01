@@ -1,9 +1,10 @@
+fpdf
+httpx
+joblib
+matplotlib
 numpy
 pandas
-matplotlib
-joblib
-httpx
+PyQt6
 requests
 schedule
 scikit-learn
-PyQt6
