@@ -1,10 +1,7 @@
-"""
-Mail Analyzer Package
-Dieses Paket enthält die Hauptkomponenten für die E-Mail-Analyse.
-"""
+"""Mail Analyzer Package.
 
-from .email_scanner import get_outlook_emails
-from .traffic_light import analyze_threat_level
-from .utils import setup_logging
+Dieses Paket bündelt die Kernkomponenten für die E-Mail-Analyse. Die
+Untermodule werden bei Bedarf geladen, um optionale Abhängigkeiten zu
+vermeiden."""
 
 __version__ = '0.1.0'

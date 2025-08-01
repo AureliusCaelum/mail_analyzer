@@ -6,8 +6,6 @@ from typing import Dict, List, Optional
 import re
 import logging
 from urllib.parse import urlparse
-import requests
-from bs4 import BeautifulSoup
 from .ml_analyzer import MLAnalyzer
 from .threat_intelligence import ThreatIntelligence
 from .context_analyzer import ContextAwareAnalyzer

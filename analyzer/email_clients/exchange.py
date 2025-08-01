@@ -1,12 +1,23 @@
+"""Exchange Online Integration über Microsoft Graph API.
+
+Dieses Modul nutzt die `msal`-Bibliothek. Ist sie nicht verfügbar, wird die
+Integration deaktiviert, ohne dass ein ImportError ausgelöst wird.
 """
-Exchange Online Integration über Microsoft Graph API
-"""
-import msal
-import requests
 import json
+import logging
 import os
 from typing import List, Dict
-import logging
+
+try:  # pragma: no cover - externe Abhängigkeit
+    import requests
+except Exception:  # pragma: no cover
+    requests = None
+
+try:  # pragma: no cover - externe Abhängigkeit
+    import msal
+except Exception:  # pragma: no cover - Modul möglicherweise nicht verfügbar
+    msal = None
+
 from .base import EmailClientBase
 
 class ExchangeOnlineClient(EmailClientBase):
@@ -22,6 +33,10 @@ class ExchangeOnlineClient(EmailClientBase):
         return "Exchange Online"
 
     def connect(self) -> bool:
+        if msal is None or requests is None:
+            logging.error("Benötigte Bibliotheken für Exchange nicht verfügbar. Integration deaktiviert.")
+            return False
+
         try:
             # MSAL App initialisieren
             authority = f"https://login.microsoftonline.com/{self._tenant_id}"
@@ -40,11 +55,10 @@ class ExchangeOnlineClient(EmailClientBase):
             if "access_token" in result:
                 self._token = result['access_token']
                 return True
-            else:
-                logging.error(f"Fehler beim Token-Abruf: {result.get('error')}")
-                return False
+            logging.error(f"Fehler beim Token-Abruf: {result.get('error')}")
+            return False
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - schwer zu simulieren
             logging.error(f"Fehler beim Verbinden mit Exchange Online: {str(e)}")
             return False
 
