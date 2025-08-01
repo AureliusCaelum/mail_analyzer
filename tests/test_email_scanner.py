@@ -28,6 +28,7 @@ sys.modules["analyzer.traffic_light"] = mock_traffic_light
 import analyzer.email_scanner  # noqa: E402
 from analyzer.email_scanner import get_outlook_emails, scan_inbox  # noqa: E402
 
+# Ursprüngliches TrafficLight-Modul wiederherstellen
 if original_traffic_light is not None:
     sys.modules["analyzer.traffic_light"] = original_traffic_light
 else:  # pragma: no cover - falls Modul zuvor nicht existierte

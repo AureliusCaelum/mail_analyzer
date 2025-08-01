@@ -24,7 +24,7 @@ class UpdateManager:
         try:
             # Prüfe nicht öfter als einmal täglich
             if self._should_check():
-                response = requests.get(self.github_api_url)
+                response = requests.get(self.github_api_url, timeout=10)
                 response.raise_for_status()
                 latest_release = response.json()
                 
@@ -44,8 +44,11 @@ class UpdateManager:
             
             return None
 
-        except Exception as e:
-            logging.error(f"Fehler bei der Update-Prüfung: {str(e)}")
+        except requests.RequestException as exc:
+            logging.error("Netzwerkfehler bei der Update-Prüfung: %s", exc)
+            return None
+        except Exception as exc:
+            logging.error("Fehler bei der Update-Prüfung: %s", exc)
             return None
 
     def download_update(self, download_url: str, target_path: str) -> bool:
@@ -53,7 +56,7 @@ class UpdateManager:
         Lädt das Update herunter
         """
         try:
-            response = requests.get(download_url, stream=True)
+            response = requests.get(download_url, stream=True, timeout=10)
             response.raise_for_status()
             
             with open(target_path, 'wb') as f:
@@ -62,8 +65,11 @@ class UpdateManager:
             
             return True
 
-        except Exception as e:
-            logging.error(f"Fehler beim Download des Updates: {str(e)}")
+        except requests.RequestException as exc:
+            logging.error("Netzwerkfehler beim Download des Updates: %s", exc)
+            return False
+        except Exception as exc:
+            logging.error("Fehler beim Download des Updates: %s", exc)
             return False
 
     def _should_check(self) -> bool:
