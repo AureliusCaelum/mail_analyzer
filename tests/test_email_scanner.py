@@ -24,7 +24,7 @@ sys.modules["colorama"] = MagicMock()
 original_traffic_light = sys.modules.get("analyzer.traffic_light")
 mock_traffic_light = MagicMock()
 mock_traffic_light.analyze_threat_level = MagicMock()
-sys.modules.setdefault("analyzer.threat", types.ModuleType("analyzer.threat"))
+sys.modules.setdefault("analyzer.threat", MagicMock())
 sys.modules["analyzer.traffic_light"] = mock_traffic_light
 
 import analyzer.email_scanner  # noqa: E402
