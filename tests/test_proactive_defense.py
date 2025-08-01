@@ -1,6 +1,6 @@
 """Tests for the ProactiveThreatDefense class."""
 
-from analyzer.threat.proactive_defense import ProactiveThreatDefense
+from analyzer.proactive_defense import ProactiveThreatDefense
 
 
 def test_analyze_trends_returns_structure():
