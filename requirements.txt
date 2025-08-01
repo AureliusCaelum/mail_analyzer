@@ -1,0 +1,8 @@
+httpx
+schedule
+numpy
+pandas
+scikit-learn
+joblib
+PyQt6
+fpdf

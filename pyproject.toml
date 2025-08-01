@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mail_analyzer"
+version = "0.1.0"
+description = "Modular email security analyzer with GUI and machine learning"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Mail Analyzer Maintainers" }
+]
+dependencies = [
+  "httpx",
+  "schedule",
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "joblib",
+  "PyQt6",
+  "fpdf"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "flake8"
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
