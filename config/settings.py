@@ -53,7 +53,7 @@ SUSPICIOUS_KEYWORDS = {
 
 SUSPICIOUS_URL_PATTERNS = [
     r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
-    r'(?:https?://)?(?:[\w-]+\.)+[\w-]+(?:/[\w-./?%&=]*)?'
+    r'(?:https?://)?(?:[\w-]+\.)+[\w-]+(?:/[\w./?%&=-]*)?'
 ]
 
 SUSPICIOUS_TLD = [

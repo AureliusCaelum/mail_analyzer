@@ -5,22 +5,26 @@ Berücksichtigt Unternehmensstruktur und Benutzerrollen bei der Bedrohungsanalys
 import os
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
+
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from datetime import datetime
 import joblib
 
+# Gewichtungen für abteilungsspezifische Analyse
+SENDER_MATCH_WEIGHT = 0.3
+SUBJECT_MATCH_WEIGHT = 0.3
+MAX_CLEARANCE_BONUS = 0.4
+
 class ContextAwareAnalyzer:
     def __init__(self, storage_dir: str = "models/context"):
         self.storage_dir = storage_dir
-        if not os.path.exists(storage_dir):
-            os.makedirs(storage_dir)
+        os.makedirs(storage_dir, exist_ok=True)
 
         self.context_file = os.path.join(storage_dir, "organization_context.json")
         self.models_dir = os.path.join(storage_dir, "role_models")
-        if not os.path.exists(self.models_dir):
-            os.makedirs(self.models_dir)
+        os.makedirs(self.models_dir, exist_ok=True)
 
         self.org_context = self._load_organization_context()
         self.role_models = {}
@@ -158,7 +162,7 @@ class ContextAwareAnalyzer:
                 pattern["sender"] == email_data.get("sender")
                 for pattern in dept_patterns
             )
-            score += 0.3 if sender_match else 0
+            score += SENDER_MATCH_WEIGHT if sender_match else 0
 
             # Prüfe übliche Betreffzeilen
             subject = email_data.get("subject", "").lower()
@@ -166,11 +170,11 @@ class ContextAwareAnalyzer:
                 any(s.lower() in subject for s in pattern.get("typical_subjects", []))
                 for pattern in dept_patterns
             )
-            score += 0.3 if subject_match else 0
+            score += SUBJECT_MATCH_WEIGHT if subject_match else 0
 
             # Berücksichtige Clearance-Level
             clearance = user_context.get("clearance_level", 1)
-            score += min(clearance / 10, 0.4)  # Max 0.4 für höchstes Clearance
+            score += min(clearance / 10, MAX_CLEARANCE_BONUS)
 
         return score
 
@@ -362,8 +366,6 @@ class ContextAwareAnalyzer:
                 contamination=0.1,
                 random_state=42
             )
-
-        # Hier könnte ein Neutraining des Modells erfolgen
         self._save_role_model(role)
 
     def _requires_model_update(self, context_data: Dict) -> bool:
