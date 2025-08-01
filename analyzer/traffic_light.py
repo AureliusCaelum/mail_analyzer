@@ -3,11 +3,18 @@ Traffic Light System für die Bedrohungsbewertung
 Implementiert ein Ampelsystem zur visuellen Darstellung der Bedrohungsstufe
 """
 from typing import Dict
-from colorama import Fore, Style, init
 from config.settings import THREAT_LEVELS
 
-# Initialisiere colorama für Windows-Kompatibilität
-init()
+try:  # pragma: no cover - optionale Abhängigkeit
+    from colorama import Fore, Style, init
+    init()
+except Exception:  # pragma: no cover - Modul möglicherweise nicht verfügbar
+    class _Dummy:
+        RED = YELLOW = GREEN = WHITE = ""
+        RESET_ALL = ""
+
+    Fore = Style = _Dummy()
+
 
 class TrafficLight:
     def __init__(self):

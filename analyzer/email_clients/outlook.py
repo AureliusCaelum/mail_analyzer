@@ -1,9 +1,18 @@
+"""Outlook E-Mail-Client Integration.
+
+Dieses Modul stellt eine Verbindung zu Microsoft Outlook her, sofern die
+entsprechenden Bibliotheken verfügbar sind. In Umgebungen ohne
+``win32com``-Unterstützung wird die Integration deaktiviert und es wird ein
+Fehler protokolliert, anstatt einen ImportError auszulösen.
 """
-Outlook E-Mail-Client Integration
-"""
-import win32com.client
 import logging
 from typing import List, Dict
+
+try:  # pragma: no cover - Plattformabhängigkeit
+    import win32com.client  # type: ignore
+except Exception:  # pragma: no cover - Modul möglicherweise nicht verfügbar
+    win32com = None
+
 from .base import EmailClientBase
 
 class OutlookClient(EmailClientBase):
@@ -15,10 +24,14 @@ class OutlookClient(EmailClientBase):
         return "Microsoft Outlook"
 
     def connect(self) -> bool:
+        if win32com is None:
+            logging.error("win32com.client nicht verfügbar. Outlook-Integration deaktiviert.")
+            return False
+
         try:
             self._outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
             return True
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - schwer zu simulieren
             logging.error(f"Fehler beim Verbinden mit Outlook: {str(e)}")
             return False
 

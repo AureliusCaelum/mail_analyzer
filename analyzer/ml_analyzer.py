@@ -3,13 +3,17 @@ Machine Learning Komponente für die E-Mail-Analyse
 Implementiert ein lokales Modell, das kontinuierlich aus den analysierten E-Mails lernt
 """
 import os
-import joblib
-import numpy as np
-import pandas as pd
+import pickle
+
+try:  # pragma: no cover - optionale Abhängigkeit
+    import joblib
+except Exception:  # pragma: no cover
+    joblib = None
+
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.metrics import mean_squared_error
 import logging
 from typing import Dict, List, Tuple, Optional
 import json
@@ -41,12 +45,13 @@ class MLAnalyzer:
             X = self.vectorizer.transform([features])
 
             # Vorhersage
-            probabilities = self.model.predict_proba(X)[0]
             prediction = self.model.predict(X)[0]
 
             return {
                 "ml_score": float(prediction),
-                "confidence": float(max(probabilities)),
+                # Bei Regressionsmodellen liegen keine Wahrscheinlichkeiten vor.
+                # Wir geben daher eine konstante Konfidenz von 1.0 zurück.
+                "confidence": 1.0,
                 "ml_features": self._get_important_features(features)
             }
 
@@ -104,9 +109,19 @@ class MLAnalyzer:
         self.vectorizer = TfidfVectorizer(max_features=1000)
         X_vectorized = self.vectorizer.fit_transform(X)
 
-        # Trainiere Modell
-        self.model = RandomForestClassifier(n_estimators=100, random_state=42)
-        self.model.fit(X_vectorized, y)
+        # Aufteilung in Trainings- und Testdaten zur Auswertung
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_vectorized, y, test_size=0.2, random_state=42
+        )
+
+        # Trainiere Regressionsmodell
+        self.model = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.model.fit(X_train, y_train)
+
+        # Bewertung des Modells
+        predictions = self.model.predict(X_test)
+        mse = mean_squared_error(y_test, predictions)
+        logging.info(f"ML-Modell neu trainiert. MSE: {mse:.4f}")
 
         # Speichere aktualisierte Modelle
         self._save_models()
@@ -135,21 +150,27 @@ class MLAnalyzer:
         """Lädt den gespeicherten Vectorizer oder erstellt einen neuen"""
         try:
             if os.path.exists(self.vectorizer_path):
-                return joblib.load(self.vectorizer_path)
+                if joblib:
+                    return joblib.load(self.vectorizer_path)
+                with open(self.vectorizer_path, "rb") as f:
+                    return pickle.load(f)
             return TfidfVectorizer(max_features=1000)
         except Exception as e:
             logging.error(f"Fehler beim Laden des Vectorizers: {str(e)}")
             return TfidfVectorizer(max_features=1000)
 
-    def _load_model(self) -> Optional[RandomForestClassifier]:
+    def _load_model(self) -> Optional[RandomForestRegressor]:
         """Lädt das gespeicherte Modell oder erstellt ein neues"""
         try:
             if os.path.exists(self.model_path):
-                return joblib.load(self.model_path)
-            return RandomForestClassifier(n_estimators=100, random_state=42)
+                if joblib:
+                    return joblib.load(self.model_path)
+                with open(self.model_path, "rb") as f:
+                    return pickle.load(f)
+            return RandomForestRegressor(n_estimators=100, random_state=42)
         except Exception as e:
             logging.error(f"Fehler beim Laden des Modells: {str(e)}")
-            return RandomForestClassifier(n_estimators=100, random_state=42)
+            return RandomForestRegressor(n_estimators=100, random_state=42)
 
     def _load_training_data(self) -> List:
         """Lädt gespeicherte Trainingsdaten"""
@@ -165,8 +186,14 @@ class MLAnalyzer:
     def _save_models(self):
         """Speichert Vectorizer und Modell"""
         try:
-            joblib.dump(self.vectorizer, self.vectorizer_path)
-            joblib.dump(self.model, self.model_path)
+            if joblib:
+                joblib.dump(self.vectorizer, self.vectorizer_path)
+                joblib.dump(self.model, self.model_path)
+            else:
+                with open(self.vectorizer_path, "wb") as f:
+                    pickle.dump(self.vectorizer, f)
+                with open(self.model_path, "wb") as f:
+                    pickle.dump(self.model, f)
         except Exception as e:
             logging.error(f"Fehler beim Speichern der Modelle: {str(e)}")
 

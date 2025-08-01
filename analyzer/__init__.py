@@ -1,6 +1,8 @@
-"""
-Mail Analyzer Package
-Dieses Paket enthält die Hauptkomponenten für die E-Mail-Analyse.
+"""Mail Analyzer Package.
+
+Dieses Paket bündelt die Kernkomponenten für die E-Mail-Analyse. Die
+Untermodule werden bei Bedarf geladen, um optionale Abhängigkeiten zu
+vermeiden.
 """
 
 # Optionale Importe, um Tests ohne externe Abhängigkeiten zu ermöglichen.

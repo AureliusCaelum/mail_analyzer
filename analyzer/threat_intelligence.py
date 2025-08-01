@@ -1,3 +1,4 @@
+ 
 """
 Threat Intelligence Modul
 Integriert verschiedene Malware- und Spam-Datenbanken sowie KI-Modelle
@@ -5,12 +6,29 @@ Integriert verschiedene Malware- und Spam-Datenbanken sowie KI-Modelle
 import os
 import hashlib
 import logging
-from typing import Dict, List, Optional
-import requests
+from typing import Dict, List
 from concurrent.futures import ThreadPoolExecutor
-from transformers import pipeline
-from sentence_transformers import SentenceTransformer
-import torch
+
+try:  # pragma: no cover - optionale Abhängigkeiten
+    import requests
+except Exception:  # pragma: no cover
+    requests = None
+
+try:  # pragma: no cover
+    from transformers import pipeline
+except Exception:  # pragma: no cover
+    pipeline = None
+
+try:  # pragma: no cover
+    from sentence_transformers import SentenceTransformer
+except Exception:  # pragma: no cover
+    SentenceTransformer = None
+
+try:  # pragma: no cover
+    import torch
+except Exception:  # pragma: no cover
+    torch = None
+
 from .local_ai_handler import LocalAIHandler
 
 class ThreatIntelligence:
@@ -24,6 +42,12 @@ class ThreatIntelligence:
 
     def _initialize_ai_models(self):
         """Initialisiert die lokalen KI-Modelle"""
+        if pipeline is None or SentenceTransformer is None or torch is None:
+            logging.warning("Transformers-Bibliotheken nicht verfügbar. KI-Analyse deaktiviert.")
+            self.model = None
+            self.transformer = None
+            return
+
         try:
             # Lade das kleinere BERT-Modell für Textklassifikation
             self.model = pipeline(
@@ -36,7 +60,7 @@ class ThreatIntelligence:
             self.transformer = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
             logging.info("KI-Modelle erfolgreich geladen")
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - Modellladefehler
             logging.error(f"Fehler beim Laden der KI-Modelle: {str(e)}")
             self.model = None
             self.transformer = None
@@ -52,9 +76,10 @@ class ThreatIntelligence:
                 file_hash = hashlib.sha256(f.read()).hexdigest()
 
             # VirusTotal API Abfrage
-            headers = {
-                "x-apikey": self.vt_api_key
-            }
+            headers = {"x-apikey": self.vt_api_key}
+            if requests is None:
+                return {"error": "requests nicht verfügbar"}
+
             response = requests.get(
                 f"https://www.virustotal.com/api/v3/files/{file_hash}",
                 headers=headers
@@ -124,22 +149,28 @@ class ThreatIntelligence:
                     "threatEntries": [{"url": url}]
                 }
             }
-            response = requests.post(safe_browsing_url, json=payload, timeout=10)
-            results["safe_browsing"] = (
-                "clean" if response.status_code == 200 and not response.json() else "suspicious"
-            )
+            if requests is None:
+                results["safe_browsing"] = "error"
+            else:
+                response = requests.post(safe_browsing_url, json=payload, timeout=10)
+                results["safe_browsing"] = (
+                    "clean" if response.status_code == 200 and not response.json() else "suspicious"
+                )
         except requests.RequestException as exc:
             logging.error("Safe Browsing check failed: %s", exc)
-            raise
+            results["safe_browsing"] = "error"
 
         # PhishTank Check
         try:
             phishtank_url = "http://checkurl.phishtank.com/checkurl/"
-            response = requests.post(phishtank_url, data={"url": url}, timeout=10)
-            results["phishtank"] = "suspicious" if "phish" in response.text.lower() else "clean"
+            if requests is None:
+                results["phishtank"] = "error"
+            else:
+                response = requests.post(phishtank_url, data={"url": url}, timeout=10)
+                results["phishtank"] = "suspicious" if "phish" in response.text.lower() else "clean"
         except requests.RequestException as exc:
             logging.error("PhishTank check failed: %s", exc)
-            raise
+            results["phishtank"] = "error"
 
         return results
 

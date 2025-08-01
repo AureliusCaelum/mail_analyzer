@@ -7,10 +7,15 @@ from email.header import decode_header
 import os
 from typing import List, Dict
 import logging
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
 import pickle
+
+try:  # pragma: no cover - externe Abhängigkeiten
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth.transport.requests import Request
+except Exception:  # pragma: no cover - Bibliotheken evtl. nicht verfügbar
+    Credentials = InstalledAppFlow = Request = None
+
 from .base import EmailClientBase
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
@@ -46,6 +51,10 @@ class GmailClient(EmailClientBase):
         return self._creds
 
     def connect(self) -> bool:
+        if Credentials is None or InstalledAppFlow is None or Request is None:
+            logging.error("Google API Bibliotheken nicht verfügbar. Gmail-Integration deaktiviert.")
+            return False
+
         try:
             self._creds = self._get_credentials()
             self._imap = imaplib.IMAP4_SSL('imap.gmail.com')
@@ -55,7 +64,7 @@ class GmailClient(EmailClientBase):
             self._imap.authenticate('XOAUTH2', lambda x: auth_string)
 
             return True
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - schwer zu simulieren
             logging.error(f"Fehler beim Verbinden mit Gmail: {str(e)}")
             return False
 
