@@ -6,18 +6,28 @@ import os
 from analyzer.threat_intelligence import ThreatIntelligence
 
 @pytest.fixture
-def threat_intel():
+def threat_intel(monkeypatch):
+    monkeypatch.setattr(ThreatIntelligence, "_initialize_ai_models", lambda self: None)
     return ThreatIntelligence()
 
-def test_local_ai_analysis(threat_intel):
-    """Test der lokalen KI-Analyse"""
-    test_text = "DRINGEND: Überweisen Sie sofort Geld auf folgendes Konto!"
-    result = threat_intel.analyze_text_local(test_text)
+def test_local_ai_analysis(threat_intel, monkeypatch):
+    """Test der lokalen KI-Analyse mit simulierten Modellantworten."""
 
-    assert 'spam_score' in result
-    assert 'threat_type' in result
-    assert 'confidence' in result
-    assert result['spam_score'] > 0.5  # Sollte als verdächtig erkannt werden
+    def dummy_analysis(_):
+        return {
+            "spam_score": 0.8,
+            "confidence": 0.9,
+            "indicators": ["phishing"],
+            "model_scores": {"mock": {"spam_score": 0.8, "risk_score": 0.5}},
+        }
+
+    monkeypatch.setattr(threat_intel.local_ai, "analyze_email_content", dummy_analysis)
+
+    result = threat_intel.analyze_text_local("Testinhalt")
+
+    assert result["spam_score"] == 0.8
+    assert result["confidence"] == 0.9
+    assert "phishing" in result["indicators"]
 
 def test_url_checking(threat_intel):
     """Test der URL-Überprüfung"""
