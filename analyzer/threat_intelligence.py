@@ -1,7 +1,7 @@
- 
-"""
-Threat Intelligence Modul
-Integriert verschiedene Malware- und Spam-Datenbanken sowie KI-Modelle
+
+"""Threat Intelligence Modul.
+
+Integriert verschiedene Malware- und Spam-Datenbanken sowie KI-Modelle.
 """
 import os
 import hashlib
@@ -30,6 +30,7 @@ except Exception:  # pragma: no cover
     torch = None
 
 from .local_ai_handler import LocalAIHandler
+
 
 class ThreatIntelligence:
     def __init__(self):
@@ -251,7 +252,7 @@ class ThreatIntelligence:
             query = f"{sender_domain}.zen.spamhaus.org"
             resolver.query(query, "A")
             results["spamhaus"] = "blacklisted"
-        except:
+        except Exception:
             results["spamhaus"] = "clean"
 
         # SURBL Check
@@ -259,7 +260,7 @@ class ThreatIntelligence:
             query = f"{sender_domain}.multi.surbl.org"
             resolver.query(query, "A")
             results["surbl"] = "blacklisted"
-        except:
+        except Exception:
             results["surbl"] = "clean"
 
         return results
@@ -271,5 +272,5 @@ class ThreatIntelligence:
             sa = spamassassin.SpamAssassin()
             score = sa.score(email_content)
             return score
-        except:
+        except Exception:
             return 0.0

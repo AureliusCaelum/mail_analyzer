@@ -53,12 +53,18 @@ class TrafficLight:
         threat_level = analysis_result.get('level')
 
         if threat_level == THREAT_LEVELS["HIGH"]:
-            return ("WARNUNG: Diese E-Mail stellt ein hohes Risiko dar!\n"
-                   "Empfehlung: Nicht öffnen und IT-Sicherheit informieren.")
+            return (
+                "WARNUNG: Diese E-Mail stellt ein hohes Risiko dar!\n"
+                "Empfehlung: Nicht öffnen und IT-Sicherheit informieren."
+            )
 
         elif threat_level == THREAT_LEVELS["MEDIUM"]:
-            return ("VORSICHT: Diese E-Mail enthält verdächtige Elemente.\n"
-                   "Empfehlung: Vorsichtig prüfen und im Zweifel IT-Support kontaktieren.")
+            return (
+                "VORSICHT: Diese E-Mail enthält verdächtige Elemente.\n"
+                "Empfehlung: Vorsichtig prüfen und im Zweifel IT-Support kontaktieren."
+            )
 
-        return ("INFO: Diese E-Mail erscheint sicher.\n"
-               "Empfehlung: Normal fortfahren, aber immer aufmerksam bleiben.")
+        return (
+            "INFO: Diese E-Mail erscheint sicher.\n"
+            "Empfehlung: Normal fortfahren, aber immer aufmerksam bleiben."
+        )

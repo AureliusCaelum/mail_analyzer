@@ -12,10 +12,12 @@ from sklearn.ensemble import IsolationForest
 from datetime import datetime
 import joblib
 
+
 # Gewichtungen für abteilungsspezifische Analyse
 SENDER_MATCH_WEIGHT = 0.3
 SUBJECT_MATCH_WEIGHT = 0.3
 MAX_CLEARANCE_BONUS = 0.4
+
 
 class ContextAwareAnalyzer:
     def __init__(self, storage_dir: str = "models/context"):

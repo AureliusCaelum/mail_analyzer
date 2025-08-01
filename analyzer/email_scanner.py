@@ -29,6 +29,7 @@ SUSPICIOUS_EXTENSIONS = tuple(
 SHORTENER_PATTERN = re.compile(r"(bit\.ly|tinyurl|goo\.gl|ow\.ly)", re.IGNORECASE)
 SUSPICIOUS_LINK_PATTERN = re.compile(r"(login|verify|secure|bank|konto)", re.IGNORECASE)
 
+
 class EmailScanner:
     def __init__(self, config_file: str = "configuration.ini"):
         self.config = configparser.ConfigParser()
@@ -77,6 +78,7 @@ class EmailScanner:
         except Exception as exc:  # Fallback for unerwartete Fehler
             logging.error(f"Fehler beim Abrufen der E-Mails: {exc}")
         return []
+
 
 def scan_email(email, trusted_domains=None):
     """Analyze an email for potential security issues and determine its risk level.
@@ -137,6 +139,7 @@ def scan_email(email, trusted_domains=None):
 
     return risk, issues
 
+
 def determine_risk_level(issues: List[str]) -> str:
     """Map detected issues to a configured threat level.
 
@@ -152,6 +155,7 @@ def determine_risk_level(issues: List[str]) -> str:
     if issues:
         return settings.THREAT_LEVELS["MEDIUM"]
     return settings.THREAT_LEVELS["LOW"]
+
 
 def scan_inbox(max_count: int = 20, trusted_domains=None):
     """Scannt E-Mails im Posteingang und bewertet deren Risiko.
@@ -176,8 +180,10 @@ def scan_inbox(max_count: int = 20, trusted_domains=None):
         })
     return results
 
+
 # Globale Instanz für einfachen Zugriff
 _scanner = None
+
 
 def get_scanner() -> EmailScanner:
     """Singleton-Zugriff auf den E-Mail-Scanner"""
@@ -185,6 +191,7 @@ def get_scanner() -> EmailScanner:
     if not _scanner:
         _scanner = EmailScanner()
     return _scanner
+
 
 def get_outlook_emails(max_count: int = 20) -> List[Dict]:
     """
