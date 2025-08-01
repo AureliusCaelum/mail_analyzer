@@ -5,23 +5,35 @@ Verwaltet die E-Mail-Client-Integrationen und den Scan-Prozess
 import logging
 import configparser
 import re
-from typing import List, Dict
+from contextlib import contextmanager
+from typing import Dict, List
+
+from config import settings
 from .email_clients.base import EmailClientBase
 from .email_clients.outlook import OutlookClient
 from .email_clients.gmail import GmailClient
 from .email_clients.exchange import ExchangeOnlineClient
 
-SUSPICIOUS_KEYWORDS = [
-    "dringend", "sofort", "passwort", "konto", "überweisen", "zahlung", "gewinnen", "klicken", "anhang öffnen",
-    "verifizieren", "bestätigen", "sicherheitswarnung", "bank", "rechnung", "ungewöhnlich", "gesperrt"
-]
-SUSPICIOUS_EXTENSIONS = [".exe", ".bat", ".js", ".vbs", ".scr", ".zip", ".rar"]
+# Suspicious markers are loaded from configuration to ease localization and updates
+SUSPICIOUS_KEYWORDS = tuple(
+    kw.lower()
+    for keywords in settings.SUSPICIOUS_KEYWORDS.values()
+    for kw in keywords
+)
+SUSPICIOUS_EXTENSIONS = tuple(
+    ext.lower()
+    for exts in settings.SUSPICIOUS_EXTENSIONS.values()
+    for ext in exts
+)
+
+URL_PATTERN = re.compile(r"https?://[^\s]+")
+SHORTENER_PATTERN = re.compile(r"(bit\.ly|tinyurl|goo\.gl|ow\.ly)", re.IGNORECASE)
+SUSPICIOUS_LINK_PATTERN = re.compile(r"(login|verify|secure|bank|konto)", re.IGNORECASE)
 
 class EmailScanner:
-    def __init__(self, config_file: str = 'configuration.ini'):
+    def __init__(self, config_file: str = "configuration.ini"):
         self.config = configparser.ConfigParser()
         self.config.read(config_file)
-        self._client = None
 
     def _initialize_client(self) -> EmailClientBase:
         """Initialisiert den konfigurierten E-Mail-Client"""
@@ -40,29 +52,32 @@ class EmailScanner:
         else:
             raise ValueError(f"Nicht unterstützter E-Mail-Client: {client_type}")
 
-    def get_emails(self, max_count: int = 20) -> List[Dict]:
-        """
-        Ruft E-Mails vom konfigurierten Client ab
-        """
+    @contextmanager
+    def _client_context(self) -> EmailClientBase:
+        """Provide a connected mail client and ensure cleanup."""
+        client = self._initialize_client()
+        logging.info(f"Initialisiere {client.name} Client")
+        if not client.connect():
+            raise ConnectionError(f"Verbindung zu {client.name} fehlgeschlagen")
         try:
-            if not self._client:
-                self._client = self._initialize_client()
-                logging.info(f"Initialisiere {self._client.name} Client")
-
-            if not self._client.connect():
-                raise ConnectionError(f"Verbindung zu {self._client.name} fehlgeschlagen")
-
-            emails = self._client.get_emails(max_count)
-            logging.info(f"{len(emails)} E-Mails von {self._client.name} abgerufen")
-            return emails
-
-        except Exception as e:
-            logging.error(f"Fehler beim Abrufen der E-Mails: {str(e)}")
-            return []
-
+            yield client
         finally:
-            if self._client:
-                self._client.disconnect()
+            client.disconnect()
+
+    def get_emails(self, max_count: int = 20) -> List[Dict]:
+        """Ruft E-Mails vom konfigurierten Client ab."""
+        try:
+            with self._client_context() as client:
+                emails = client.get_emails(max_count)
+                logging.info(
+                    f"{len(emails)} E-Mails von {client.name} abgerufen"
+                )
+                return emails
+        except ConnectionError as exc:
+            logging.error(f"Verbindungsfehler: {exc}")
+        except Exception as exc:  # Fallback for unerwartete Fehler
+            logging.error(f"Fehler beim Abrufen der E-Mails: {exc}")
+        return []
 
 def scan_email(email, trusted_domains=None):
     """Analyze an email for potential security issues and determine its risk level.
@@ -89,23 +104,24 @@ def scan_email(email, trusted_domains=None):
     if trusted_domains is None:
         trusted_domains = ["@ihrefirma.de", "@vertrauenswuerdig.de"]
 
-    subject = email.get("subject", "") or ""
-    body = email.get("body", "") or ""
-    sender = email.get("sender", "") or ""
+    subject = email.get("subject") or ""
+    body = email.get("body") or ""
+    sender = email.get("sender") or ""
 
-    issues = []
+    subject_lower = subject.lower()
+    body_lower = body.lower()
+    issues: List[str] = []
 
     # Check for suspicious keywords in subject and body
     for keyword in SUSPICIOUS_KEYWORDS:
-        if keyword.lower() in subject.lower() or keyword.lower() in body.lower():
+        if keyword in subject_lower or keyword in body_lower:
             issues.append(f"Verdächtiges Schlüsselwort gefunden: '{keyword}'")
 
     # Check for suspicious links
-    links = re.findall(r'https?://[^\s]+', body)
-    for link in links:
-        if any(domain in link for domain in ["bit.ly", "tinyurl", "goo.gl", "ow.ly"]):
+    for link in URL_PATTERN.findall(body):
+        if SHORTENER_PATTERN.search(link):
             issues.append(f"Verdächtiger Kurzlink gefunden: {link}")
-        if re.search(r"(login|verify|secure|bank|konto)", link, re.IGNORECASE):
+        if SUSPICIOUS_LINK_PATTERN.search(link):
             issues.append(f"Verdächtiger Link gefunden: {link}")
 
     # Check for suspicious attachments
@@ -122,20 +138,26 @@ def scan_email(email, trusted_domains=None):
 
     return risk, issues
 
-def determine_risk_level(issues):
+def determine_risk_level(issues: List[str]) -> str:
+    """Map detected issues to a risk color.
+
+    Args:
+        issues (list[str]): Collection of issue descriptions.
+
+    Returns:
+        str: "red" if critical issues exist, "yellow" for warnings and
+            "green" when no issues were found.
+    """
     if any("Verdächtiger Anhang" in i or "Verdächtiger Link" in i for i in issues):
         return "red"
     elif issues:
         return "yellow"
-    else:
-        return "green"
+    return "green"
 
-def scan_inbox(folder_name: str = "Posteingang", max_count: int = 20, trusted_domains=None):
+def scan_inbox(max_count: int = 20, trusted_domains=None):
     """Scannt E-Mails im Posteingang und bewertet deren Risiko.
 
     Args:
-        folder_name (str): Name des Outlook-Ordners. Der Parameter ist
-            aktuell nur ein Platzhalter und hat keine Auswirkung.
         max_count (int): Maximale Anzahl abzurufender E-Mails.
         trusted_domains (list[str] | None): Liste vertrauenswürdiger Domains,
             die bei der Bewertung berücksichtigt werden.
