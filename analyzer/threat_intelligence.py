@@ -66,14 +66,27 @@ class ThreatIntelligence:
             self.transformer = None
 
     def analyze_attachment(self, file_path: str) -> Dict:
-        """Analysiert einen E-Mail-Anhang mit VirusTotal"""
+        """Analysiert einen E-Mail-Anhang mit VirusTotal.
+
+        Die Datei wird in kleinen Blöcken gelesen, um übermäßige
+        Speichernutzung zu vermeiden.
+
+        Args:
+            file_path (str): Pfad zur zu analysierenden Datei.
+
+        Returns:
+            Dict: Ergebnisse der VirusTotal-Analyse oder eine Fehlermeldung.
+        """
         try:
             if not self.vt_api_key:
                 return {"error": "Kein VirusTotal API-Schlüssel konfiguriert"}
 
-            # Berechne Datei-Hash
-            with open(file_path, 'rb') as f:
-                file_hash = hashlib.sha256(f.read()).hexdigest()
+            # Berechne Datei-Hash ohne die komplette Datei in den Speicher zu laden
+            hash_obj = hashlib.sha256()
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(8192), b""):
+                    hash_obj.update(chunk)
+            file_hash = hash_obj.hexdigest()
 
             # VirusTotal API Abfrage
             headers = {"x-apikey": self.vt_api_key}
