@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QListWidget,
-    QListWidgetItem,
     QLabel,
     QTextEdit,
     QPushButton,
@@ -89,6 +88,7 @@ class MainWindow(QMainWindow):
         self.update_check_timer.start(86400000)  # Einmal täglich prüfen
 
         self._setup_ui()
+        self._apply_stylesheet()
 
         # Sofortige Update-Prüfung beim Start
         QTimer.singleShot(1000, self.check_for_updates)
@@ -111,6 +111,19 @@ class MainWindow(QMainWindow):
 
         self._load_initial_emails()
         self._setup_menu()
+
+    def _apply_stylesheet(self) -> None:
+        """Load and apply the global application stylesheet.
+
+        The stylesheet resides in ``styles.qss`` within the GUI package. If the
+        file is missing, the method silently returns and the default Qt style is
+        used instead.
+        """
+        style_path = os.path.join(os.path.dirname(__file__), "styles.qss")
+        if not os.path.exists(style_path):
+            return
+        with open(style_path, "r", encoding="utf-8") as style_file:
+            self.setStyleSheet(style_file.read())
 
     def _setup_left_panel(self) -> QWidget:
         """Create the left panel containing the email list."""
