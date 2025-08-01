@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QDialog, QFormLayout, QLineEdit, QDialogButtonBox, QMenu
 )
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QFont, QAction
+from PyQt6.QtGui import QColor, QFont, QAction, QDesktopServices, QUrl
 
 from analyzer.email_scanner import get_scanner
 from analyzer.threat_analyzer import ThreatAnalyzer
@@ -434,7 +434,7 @@ class MainWindow(QMainWindow):
                     "Bericht erstellt",
                     f"Der PDF-Bericht wurde erstellt unter:\n{filename}"
                 )
-                os.startfile(filename)  # Öffnet den Bericht
+                QDesktopServices.openUrl(QUrl.fromLocalFile(filename))  # Öffnet den Bericht
         except Exception as e:
             QMessageBox.critical(
                 self,
@@ -460,7 +460,7 @@ class MainWindow(QMainWindow):
                     "Bericht erstellt",
                     f"Der Excel-Bericht wurde erstellt unter:\n{filename}"
                 )
-                os.startfile(filename)  # Öffnet den Bericht
+                QDesktopServices.openUrl(QUrl.fromLocalFile(filename))  # Öffnet den Bericht
         except Exception as e:
             QMessageBox.critical(
                 self,
