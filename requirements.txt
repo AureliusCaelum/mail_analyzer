@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+joblib
+httpx
+requests
+schedule
+scikit-learn
+PyQt6
