@@ -116,8 +116,20 @@ def determine_risk_level(issues):
     else:
         return "green"
 
-def scan_inbox(folder_name="Posteingang", max_count=20, trusted_domains=None):
-    emails = get_outlook_emails(folder_name, max_count)
+def scan_inbox(folder_name: str = "Posteingang", max_count: int = 20, trusted_domains=None):
+    """Scannt E-Mails im Posteingang und bewertet deren Risiko.
+
+    Args:
+        folder_name (str): Name des Outlook-Ordners. Der Parameter ist
+            aktuell nur ein Platzhalter und hat keine Auswirkung.
+        max_count (int): Maximale Anzahl abzurufender E-Mails.
+        trusted_domains (list[str] | None): Liste vertrauenswürdiger Domains,
+            die bei der Bewertung berücksichtigt werden.
+
+    Returns:
+        List[Dict]: Eine Liste mit Ergebnissen pro E-Mail.
+    """
+    emails = get_outlook_emails(max_count=max_count)
     results = []
     for email in emails:
         risk, issues = scan_email(email, trusted_domains=trusted_domains)
@@ -125,7 +137,7 @@ def scan_inbox(folder_name="Posteingang", max_count=20, trusted_domains=None):
             "subject": email["subject"],
             "sender": email["sender"],
             "risk": risk,
-            "issues": issues
+            "issues": issues,
         })
     return results
 
