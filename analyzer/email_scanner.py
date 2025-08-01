@@ -11,11 +11,29 @@ from .email_clients.outlook import OutlookClient
 from .email_clients.gmail import GmailClient
 from .email_clients.exchange import ExchangeOnlineClient
 
-SUSPICIOUS_KEYWORDS = [
-    "dringend", "sofort", "passwort", "konto", "überweisen", "zahlung", "gewinnen", "klicken", "anhang öffnen",
-    "verifizieren", "bestätigen", "sicherheitswarnung", "bank", "rechnung", "ungewöhnlich", "gesperrt"
-]
-SUSPICIOUS_EXTENSIONS = [".exe", ".bat", ".js", ".vbs", ".scr", ".zip", ".rar"]
+SUSPICIOUS_KEYWORDS = (
+    "dringend",
+    "sofort",
+    "passwort",
+    "konto",
+    "überweisen",
+    "zahlung",
+    "gewinnen",
+    "klicken",
+    "anhang öffnen",
+    "verifizieren",
+    "bestätigen",
+    "sicherheitswarnung",
+    "bank",
+    "rechnung",
+    "ungewöhnlich",
+    "gesperrt",
+)
+SUSPICIOUS_EXTENSIONS = (".exe", ".bat", ".js", ".vbs", ".scr", ".zip", ".rar")
+
+URL_PATTERN = re.compile(r"https?://[^\s]+")
+SHORTENER_PATTERN = re.compile(r"(bit\.ly|tinyurl|goo\.gl|ow\.ly)", re.IGNORECASE)
+SUSPICIOUS_LINK_PATTERN = re.compile(r"(login|verify|secure|bank|konto)", re.IGNORECASE)
 
 class EmailScanner:
     def __init__(self, config_file: str = 'configuration.ini'):
@@ -89,23 +107,24 @@ def scan_email(email, trusted_domains=None):
     if trusted_domains is None:
         trusted_domains = ["@ihrefirma.de", "@vertrauenswuerdig.de"]
 
-    subject = email.get("subject", "") or ""
-    body = email.get("body", "") or ""
-    sender = email.get("sender", "") or ""
+    subject = email.get("subject") or ""
+    body = email.get("body") or ""
+    sender = email.get("sender") or ""
 
-    issues = []
+    subject_lower = subject.lower()
+    body_lower = body.lower()
+    issues: List[str] = []
 
     # Check for suspicious keywords in subject and body
     for keyword in SUSPICIOUS_KEYWORDS:
-        if keyword.lower() in subject.lower() or keyword.lower() in body.lower():
+        if keyword in subject_lower or keyword in body_lower:
             issues.append(f"Verdächtiges Schlüsselwort gefunden: '{keyword}'")
 
     # Check for suspicious links
-    links = re.findall(r'https?://[^\s]+', body)
-    for link in links:
-        if any(domain in link for domain in ["bit.ly", "tinyurl", "goo.gl", "ow.ly"]):
+    for link in URL_PATTERN.findall(body):
+        if SHORTENER_PATTERN.search(link):
             issues.append(f"Verdächtiger Kurzlink gefunden: {link}")
-        if re.search(r"(login|verify|secure|bank|konto)", link, re.IGNORECASE):
+        if SUSPICIOUS_LINK_PATTERN.search(link):
             issues.append(f"Verdächtiger Link gefunden: {link}")
 
     # Check for suspicious attachments
@@ -122,13 +141,21 @@ def scan_email(email, trusted_domains=None):
 
     return risk, issues
 
-def determine_risk_level(issues):
+def determine_risk_level(issues: List[str]) -> str:
+    """Map detected issues to a risk color.
+
+    Args:
+        issues (list[str]): Collection of issue descriptions.
+
+    Returns:
+        str: "red" if critical issues exist, "yellow" for warnings and
+            "green" when no issues were found.
+    """
     if any("Verdächtiger Anhang" in i or "Verdächtiger Link" in i for i in issues):
         return "red"
     elif issues:
         return "yellow"
-    else:
-        return "green"
+    return "green"
 
 def scan_inbox(folder_name: str = "Posteingang", max_count: int = 20, trusted_domains=None):
     """Scannt E-Mails im Posteingang und bewertet deren Risiko.
